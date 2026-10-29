@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AddisBiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f5f7; --ink:#1d1d1f; --muted:#86868b; --fill:rgba(120,120,128,.12);
+    --glass:rgba(255,255,255,.66); --edge:rgba(255,255,255,.9); --line:rgba(0,0,0,.07);
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px rgba(0,0,0,.08);
+    --blue:#0a84ff; --violet:#8e6bff; --ok:#30d158; --bad:#ff453a; --amber:#ff9f0a;
+    --glow1:rgba(10,132,255,.20); --glow2:rgba(142,107,255,.16);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0b0b0d; --ink:#f5f5f7; --muted:#8e8e93; --fill:rgba(120,120,128,.24);
+           --glass:rgba(32,32,36,.62); --edge:rgba(255,255,255,.10); --line:rgba(255,255,255,.08);
+           --shadow:0 1px 2px rgba(0,0,0,.3),0 20px 60px rgba(0,0,0,.5);
+           --glow1:rgba(10,132,255,.20); --glow2:rgba(142,107,255,.14); }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  /* quiet ambient light */
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .bg i{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform}
+  .bg i:nth-child(1){width:60vmin;height:60vmin;left:8vw;top:-18vmin;background:var(--glow1);animation:d1 26s ease-in-out infinite alternate}
+  .bg i:nth-child(2){width:56vmin;height:56vmin;right:4vw;top:20vh;background:var(--glow2);animation:d2 32s ease-in-out infinite alternate}
+  @keyframes d1{to{transform:translate(10vw,8vh)}}
+  @keyframes d2{to{transform:translate(-8vw,10vh)}}
+
+  main{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:clamp(56px,12vh,110px) 22px 90px;
+       display:flex;flex-direction:column;align-items:center}
+
+  /* liquid iridescent title */
+  h1{margin:0 0 clamp(26px,5vh,44px);font-size:clamp(48px,9vw,82px);line-height:1.02;font-weight:700;letter-spacing:-.045em;
+     background:linear-gradient(100deg,var(--ink) 0%,var(--ink) 30%,#38bdf8 42%,#a78bff 52%,#ff8fb8 58%,#38bdf8 66%,var(--ink) 78%,var(--ink) 100%);
+     background-size:320% 100%;background-position:100% 0;
+     -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+     opacity:0;filter:blur(10px);transform:translateY(8px);
+     animation:titleIn 1.1s var(--ease) .05s forwards, sheen 7.5s cubic-bezier(.4,0,.2,1) 1s infinite}
+  @keyframes titleIn{to{opacity:1;filter:none;transform:none}}
+  @keyframes sheen{0%{background-position:100% 0}55%,100%{background-position:0% 0}}
+
+  .glass{background:var(--glass);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);
+         border:1px solid var(--edge);box-shadow:var(--shadow)}
+
+  /* input pill */
+  .bar{width:100%;max-width:560px;border-radius:26px;display:flex;align-items:center;gap:4px;padding:6px 6px 6px 20px;
+       transition:box-shadow .5s var(--ease),border-color .4s;opacity:0;animation:fadeUp .9s var(--ease) .25s forwards}
+  .bar:focus-within{box-shadow:0 0 0 4px rgba(10,132,255,.16),var(--shadow);border-color:rgba(10,132,255,.45)}
+  textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:16px;resize:none;
+           padding:13px 0;min-height:48px;max-height:132px;line-height:1.4;overflow-y:auto;outline:none;box-shadow:none}
+  textarea:focus,textarea:focus-visible{outline:none}
+  textarea::placeholder{color:var(--muted)}
+  .icon,.go{border:0;cursor:pointer;display:grid;place-items:center;flex:none;transition:transform .35s var(--ease),background .25s,color .25s,box-shadow .3s}
+  .icon{width:40px;height:40px;border-radius:50%;background:transparent;color:var(--muted)}
+  .icon:hover{background:var(--fill);color:var(--ink)}
+  .icon svg{transition:transform .6s var(--ease)} .icon.open{color:var(--blue)} .icon.open svg{transform:rotate(180deg)}
+  .go{width:44px;height:44px;border-radius:50%;color:#fff;background:var(--blue);box-shadow:0 4px 14px rgba(10,132,255,.3)}
+  .go:hover{transform:scale(1.06)} .go:active,.pill:active,.icon:active{transform:scale(.93)}
+  .go svg{grid-area:1/1;transition:transform .5s var(--ease),opacity .25s}
+  .go .sq{opacity:0;transform:scale(.4)}
+  body[data-state=running] .go{background:var(--bad);box-shadow:0 4px 14px rgba(255,69,58,.3)}
+  body[data-state=running] .go .ar{opacity:0;transform:scale(.4)}
+  body[data-state=running] .go .sq{opacity:1;transform:none}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* settings popover */
+  .popwrap{width:100%;max-width:560px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease)}
+  .popwrap.open{grid-template-rows:1fr}
+  .popin{min-height:0;overflow:hidden}
+  .pop{margin-top:12px;border-radius:20px;padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+       opacity:0;transform:translateY(-6px);transition:opacity .4s,transform .6s var(--ease)}
+  .popwrap.open .pop{opacity:1;transform:none}
+  .pop label{display:block;font-size:12px;color:var(--muted);font-weight:500;margin:0 0 6px 2px}
+  .pop select,.pop input{width:100%;border:0;border-radius:11px;padding:9px 11px;font:inherit;font-size:14px;color:var(--ink);background:var(--fill);outline:0;-moz-appearance:textfield}
+
+  /* progress stage */
+  .stage{width:100%;display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .9s var(--ease),opacity .6s}
+  body[data-state=running] .stage,body[data-state=done] .stage{grid-template-rows:1fr;opacity:1}
+  .stage-in{min-height:0;overflow:hidden}
+  .stage-pad{display:flex;flex-direction:column;align-items:center;gap:18px;padding:48px 40px 10px}
+  .orb-wrap{position:relative;width:200px;height:200px}
+  .halo{position:absolute;inset:-8px;border-radius:50%;background:conic-gradient(var(--blue),var(--violet),#ff8fb8,var(--blue));
+        filter:blur(24px);opacity:.24;animation:spin 9s linear infinite;transition:background .5s}
+  .ring{position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 0deg,var(--blue),var(--violet),#ff8fb8,var(--blue));
+        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));
+        mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));animation:spin 6s linear infinite}
+  body[data-state=done] .ring{animation-duration:18s;opacity:.8} body[data-state=done] .halo{animation-duration:24s;opacity:.14}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .orb{position:absolute;inset:0;border-radius:50%;overflow:hidden;transform:translateZ(0);
+       box-shadow:var(--shadow),inset 0 1.5px 0 rgba(255,255,255,.45),inset 0 -20px 40px rgba(0,0,0,.05)}
+  .wave{position:absolute;left:0;right:0;top:calc(100% - var(--lvl,0) * 1%);height:100%;
+        -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 14' preserveAspectRatio='none'%3E%3Cpath d='M0 7Q40-1 80 7T160 7V14H0Z'/%3E%3C/svg%3E"),linear-gradient(#000,#000);
+        mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 14' preserveAspectRatio='none'%3E%3Cpath d='M0 7Q40-1 80 7T160 7V14H0Z'/%3E%3C/svg%3E"),linear-gradient(#000,#000);
+        -webkit-mask-size:160px 14px,100% calc(100% - 13px);mask-size:160px 14px,100% calc(100% - 13px);
+        -webkit-mask-position:0 0,0 13px;mask-position:0 0,0 13px;
+        -webkit-mask-repeat:repeat-x,no-repeat;mask-repeat:repeat-x,no-repeat}
+  .wave.a{background:linear-gradient(180deg,rgba(10,132,255,.65),rgba(94,92,230,.72));animation:slide 5.5s linear infinite}
+  .wave.b{background:linear-gradient(180deg,rgba(100,210,255,.45),rgba(10,132,255,.45));top:calc(100% - var(--lvl,0) * 1% - 5px);animation:slide 8.5s linear infinite reverse}
+  @keyframes slide{from{-webkit-mask-position:0 0,0 13px;mask-position:0 0,0 13px}to{-webkit-mask-position:160px 0,0 13px;mask-position:160px 0,0 13px}}
+  .num{position:absolute;inset:0;display:grid;place-content:center;text-align:center;z-index:2;pointer-events:none}
+  .big{font-size:52px;font-weight:600;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums}
+  .big small{font-size:24px;font-weight:600;margin-left:2px;opacity:.55}
+  .sub{margin-top:8px;font-size:13px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+  .check{width:64px;height:64px;margin:0 auto;display:block}
+  .check path{fill:none;stroke:var(--ink);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .7s var(--ease) .1s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .meta{font-size:14px;color:var(--muted);font-weight:500;min-height:20px}
+
+  /* results card */
+  .results{width:100%;border-radius:24px;margin-top:20px;padding:14px;display:none;opacity:0}
+  .results.show{display:block;animation:fadeUp .8s var(--ease) forwards}
+  .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .seg{display:flex;background:var(--fill);border-radius:10px;padding:2px;position:relative}
+  .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:500;font-size:13px;padding:6px 16px;border-radius:8px;cursor:pointer;position:relative;z-index:1;transition:color .3s}
+  .seg button.on{color:var(--ink)}
+  .seg .thumb{position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 2px);border-radius:8px;background:var(--bg);box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .5s var(--ease)}
+  .seg[data-tab=log] .thumb{transform:translateX(100%)}
+  .spacer{flex:1}
+  .pill{border:0;cursor:pointer;font:inherit;font-weight:500;font-size:14px;padding:9px 16px;border-radius:99px;background:var(--fill);color:var(--ink);
+        display:inline-flex;align-items:center;gap:7px;transition:transform .35s var(--ease),background .25s,opacity .3s}
+  .pill:hover{transform:translateY(-1px)}
+  .pill.main{background:var(--blue);color:#fff}
+  .pill:disabled{opacity:.4;pointer-events:none}
+  .pill.warn{color:var(--bad)} .pill[hidden]{display:none}
+  .panel{margin-top:12px;display:none}
+  .panel.on{display:block;animation:fade .5s var(--ease)}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}}
+  .tablewrap{overflow:auto;max-height:380px;border-radius:14px;background:rgba(127,127,127,.05)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:11px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:0}
+  th{position:sticky;top:0;background:var(--glass);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:var(--muted);font-weight:500;z-index:1}
+  td.wrap{white-space:normal;min-width:240px}
+  tbody tr{animation:fade .45s var(--ease) both}
+  tbody tr:hover{background:rgba(127,127,127,.07)}
+  td.bad{color:var(--bad)}
+  #log{height:300px;overflow:auto;border-radius:14px;background:rgba(127,127,127,.05);padding:12px 14px;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+  #log .err{color:var(--bad)} #log .ok{color:var(--ok)} #log .warn{color:var(--amber)}
+
+  @media (max-width:560px){ .pop{grid-template-columns:1fr} .orb-wrap{width:176px;height:176px} .big{font-size:46px} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important} h1{filter:none;opacity:1} }
+</style>
+</head>
+<body data-state="idle">
+
+<div class="bg"><i></i><i></i></div>
+
+<main>
+  <h1>AddisBiz</h1>
+
+  <div class="bar glass" id="bar">
+    <textarea id="urls" rows="1" spellcheck="false" placeholder="Paste links" aria-label="AddisBiz category links"></textarea>
+    <button class="icon" id="gear" type="button" aria-label="Settings" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.4" fill="var(--bg)"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2.4" fill="var(--bg)"/></svg>
+    </button>
+    <button class="go" id="go" type="button" aria-label="Start">
+      <svg class="ar" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      <svg class="sq" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3.5"/></svg>
+    </button>
+  </div>
+
+  <div class="popwrap" id="popwrap"><div class="popin"><div class="pop glass">
+    <div><label for="proxy">Connection</label>
+      <select id="proxy">
+        <option value="auto">Auto</option><option value="local">Local Proxy</option><option value="allorigins">AllOrigins</option>
+        <option value="corsproxy">CorsProxy</option><option value="codetabs">CodeTabs</option><option value="direct">Direct</option>
+      </select></div>
+    <div><label for="par">Parallel</label><input type="number" id="par" min="1" max="8" value="3"></div>
+    <div><label for="delay">Delay ms</label><input type="number" id="delay" min="0" max="5000" step="100" value="300"></div>
+  </div></div></div>
+
+  <section class="stage" aria-live="polite"><div class="stage-in"><div class="stage-pad">
+    <div class="orb-wrap">
+      <div class="halo"></div><div class="ring"></div>
+      <div class="orb glass" id="orb">
+        <div class="wave b"></div><div class="wave a"></div>
+        <div class="num"><div class="big" id="big">0</div><div class="sub" id="sub">&nbsp;</div></div>
+      </div>
+    </div>
+    <div class="meta" id="meta"></div>
+  </div></div></section>
+
+  <section class="results glass" id="results">
+    <div class="toolbar">
+      <div class="seg" id="seg" data-tab="table"><i class="thumb"></i><button class="on" data-tab="table">Table</button><button data-tab="log">Log</button></div>
+      <span class="spacer"></span>
+      <button class="pill warn" id="retry" hidden>Retry</button>
+      <button class="pill" id="dlc" disabled>CSV</button>
+      <button class="pill main" id="dlx" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Excel</button>
+    </div>
+    <div class="panel on" id="p-table"><div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div></div>
+    <div class="panel" id="p-log"><div id="log"></div></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const PROXIES = {
+  local:       {url: u => "/api/proxy?url=" + encodeURIComponent(u)},
+  allorigins:  {url: u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u)},
+  alloriginsJ: {url: u => "https://api.allorigins.win/get?url=" + encodeURIComponent(u), json: true},
+  corsproxy:   {url: u => "https://corsproxy.io/?url=" + encodeURIComponent(u)},
+  codetabs:    {url: u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u)},
+  thingproxy:  {url: u => "https://thingproxy.freeboard.io/fetch/" + u},
+  direct:      {url: u => u}
+};
+let goodProxy = null, problem = "", isLocalhost = false;
+const PREFERRED = ["#","Company","Mobile","Mobile 1","Mobile 2","Telephone 1","Telephone 2","Telephone","Fax","Email",
+  "Website","Address","Location","Number of Employees","All Phones","Categories","Source Category","Source List","AddisBiz Page","Status"];
+const DETAIL_RE = /\/business-directory\/(\d+-[^\/?#]+)\/?$/;
+
+let stopFlag = false, items = [], rowsByUrl = new Map(), running = false;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function log(msg, cls){
+  const d = document.createElement("div"); if (cls) d.className = cls; d.textContent = msg;
+  const box = $("#log"); box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+function setState(s){ document.body.dataset.state = s; }
+
+/* detect local server */
+(async function checkLocal(){
+  try {
+    const r = await fetch("/api/health");
+    if (r.ok) { isLocalhost = true; goodProxy = "local"; }
+  } catch(_) {}
+})();
+
+/* liquid level */
+let target = 0, cur = 0, indet = false;
+(function loop(t){
+  cur += (target - cur) * 0.08; if (Math.abs(target - cur) < 0.03) cur = target;
+  const lvl = Math.max(0, Math.min(112, cur + (indet ? Math.sin(t / 650) * 3.5 : 0)));
+  $("#orb").style.setProperty("--lvl", lvl.toFixed(2));
+  requestAnimationFrame(loop);
+})(0);
+
+function setOrb({pct = null, big = "", small = "", scanning = false}){
+  indet = scanning;
+  if (pct !== null) target = pct; else if (scanning) target = 26;
+  $("#big").innerHTML = big;
+  $("#sub").textContent = small || "\u00a0";
+}
+function showCheck(){
+  $("#big").innerHTML = '<svg class="check" viewBox="0 0 64 64"><path d="M16 34l11 11 22-24"/></svg>';
+  $("#sub").textContent = "\u00a0";
+}
+
+/* controls */
+$("#gear").onclick = () => {
+  const o = $("#popwrap").classList.toggle("open"); $("#gear").classList.toggle("open", o); $("#gear").setAttribute("aria-expanded", o);
+};
+document.querySelectorAll("#seg button").forEach(b => b.onclick = () => {
+  const t = b.dataset.tab; $("#seg").dataset.tab = t;
+  document.querySelectorAll("#seg button").forEach(x => x.classList.toggle("on", x === b));
+  $("#p-table").classList.toggle("on", t === "table"); $("#p-log").classList.toggle("on", t === "log");
+});
+const ta = $("#urls");
+const grow = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 132) + "px"; };
+ta.addEventListener("input", grow);
+ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if (!running) start(); } });
+$("#go").onclick = () => { if (running){ stopFlag = true; } else start(); };
+
+/* ---------- smart url parser ---------- */
+function generateCategoryTitle(urlStr) {
+  try {
+    const parsed = new URL(urlStr);
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    if (pathParts.length >= 2) {
+      const sub = pathParts.slice(1).map(p => {
+        p = p.replace(/^\d+-/, '');
+        return p.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      });
+      let name = sub.join(' - ');
+      if (parsed.searchParams.has('city')) {
+        name += ` (${parsed.searchParams.get('city')})`;
+      }
+      return name;
+    }
+  } catch (_) {}
+  return "Category";
+}
+
+function parseInputCategories(text) {
+  const urls = [];
+  const seen = new Set();
+  const rawMatches = text.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+
+  for (let u of rawMatches) {
+    if (u.includes('ampproject.org')) {
+      const ampShareMatch = u.match(/ampshare=([^&]+)/i);
+      if (ampShareMatch) {
+        u = decodeURIComponent(ampShareMatch[1]);
+      } else {
+        const directMatch = u.match(/\/s\/(addisbiz\.com\/[^\?#]+)/i);
+        if (directMatch) u = 'https://' + directMatch[1];
+      }
+    }
+
+    if (!/https?:\/\/(www\.)?addisbiz\.com\//i.test(u)) continue;
+
+    try {
+      const parsed = new URL(u);
+      parsed.searchParams.delete('page');
+      parsed.hash = '';
+
+      let cleanPath = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+      const queryStr = parsed.searchParams.toString();
+      const normalized = queryStr ? `${cleanPath}?${queryStr}` : cleanPath;
+
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        const isCompany = DETAIL_RE.test(parsed.pathname);
+        urls.push({
+          url: normalized,
+          title: isCompany ? "Direct Company" : generateCategoryTitle(normalized),
+          isCompany: isCompany
+        });
+      }
+    } catch (_) {}
+  }
+  return urls;
+}
+
+/* ---------- network ---------- */
+async function getHtml(url){
+  const sel = $("#proxy").value;
+  let order = sel === "auto" ? (isLocalhost ? ["local","allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"] : ["allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"]) : [sel];
+  if (sel === "auto" && goodProxy) order = [goodProxy, ...order.filter(p => p !== goodProxy)];
+  const errs = {};
+  for (let round = 0; round < 2; round++){
+    for (const p of order){
+      if (stopFlag) throw new Error("Stopped");
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 30000);
+      try{
+        const res = await fetch(PROXIES[p].url(url), {signal: ctrl.signal});
+        clearTimeout(t);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        let txt = await res.text();
+        if (PROXIES[p].json){ txt = (JSON.parse(txt).contents) || ""; }
+        if (txt.length < 800 || !/addisbiz/i.test(txt)) throw new Error("unexpected reply");
+        if (sel === "auto") goodProxy = p;
+        return txt;
+      }catch(e){
+        clearTimeout(t);
+        errs[p] = e.name === "AbortError" ? "timeout" : (/failed to fetch/i.test(e.message) ? "blocked" : e.message);
+      }
+    }
+    await sleep(900);
+  }
+  throw new Error(Object.entries(errs).map(([k,v]) => k + ": " + v).join(" | "));
+}
+const parse = html => new DOMParser().parseFromString(html, "text/html");
+
+/* ---------- list pages ---------- */
+function extractListings(doc, base){
+  const cutoff = [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
+    .find(e => /^featured businesses$/i.test(e.textContent.replace(/\s+/g," ").trim()));
+  const all = [...doc.querySelectorAll("a[href]")];
+  let anchors = cutoff ? all.filter(a => cutoff.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING) : all;
+  
+  const out = [], map = new Map();
+  const collect = list => list.forEach(el => {
+    if (el.closest(".featuredbusinesses, .featured, aside, #sidebar, .sidebar")) return;
+    let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+    href = href.replace(/[?#].*$/, "");
+    if (!DETAIL_RE.test(href)) return;
+    let it = map.get(href); if (!it){ it = {url: href, name: ""}; map.set(href, it); out.push(it); }
+    const text = el.textContent.replace(/\s+/g," ").trim();
+    if (!it.name && text && !/more details/i.test(text) && !/^(mobile|office|tel)/i.test(text)) it.name = text;
+    if (!it.name){ const t = (el.getAttribute("title") || "").replace(/\s*Business Page\s*$/i,"").trim(); if (t) it.name = t; }
+  });
+  collect(anchors);
+  if (!out.length && cutoff) collect(all);
+  return out;
+}
+
+async function crawlList(catInfo, already){
+  const baseUrl = catInfo.url;
+  const found = [], seen = new Set();
+  for (let p = 1; p <= 150; p++){
+    if (stopFlag) break;
+    let pageUrl = baseUrl;
+    try {
+      const u = new URL(baseUrl);
+      if (p > 1) u.searchParams.set("page", p);
+      else u.searchParams.delete("page");
+      pageUrl = u.toString();
+    } catch (_) {}
+
+    let html;
+    try{ html = await getHtml(pageUrl); }
+    catch(e){
+      log("Page " + p + " failed → " + e.message, "err");
+      if (p === 1) problem = "Couldn't reach AddisBiz. Try again or change Connection.";
+      break;
+    }
+    const doc = parse(html);
+    const list = extractListings(doc, pageUrl).filter(x => !seen.has(x.url));
+    if (!list.length){
+      if (p === 1){
+        problem = "No companies found in this category.";
+        log("Page 1 loaded (" + Math.round(html.length/1024) + " KB) but no company links matched.", "warn");
+      }
+      break;
+    }
+    list.forEach(x => { 
+      seen.add(x.url); 
+      x.list = baseUrl; 
+      x.categoryTitle = catInfo.title;
+      found.push(x); 
+    });
+    log("Page " + p + ": " + list.length + " companies (total " + found.length + ")");
+    setOrb({big: String(already + found.length), small: "Scanning", scanning: true});
+    $("#meta").textContent = (already + found.length) + " found";
+    await sleep(+$("#delay").value || 0);
+  }
+  return found;
+}
+
+/* ---------- detail page ---------- */
+function parseDetail(html, url){
+  const doc = parse(html), rec = {};
+  rec["Company"] = (doc.querySelector("h1")?.textContent || "").replace(/\s+/g," ").trim();
+  doc.querySelectorAll("table tr").forEach(tr => {
+    const c = tr.querySelectorAll("th,td");
+    if (c.length < 2) return;
+    const k = c[0].textContent.replace(/[:\s]+$/,"").replace(/\s+/g," ").trim();
+    const v = c[1].textContent.replace(/\s+/g," ").trim();
+    if (!k || !v) return;
+    rec[k] = rec[k] ? rec[k] + "; " + v : v;
+  });
+  const phones = new Set();
+  doc.querySelectorAll('a[href^="tel:"]').forEach(a => {
+    const n = a.getAttribute("href").replace(/^tel:/,"").replace(/[^\d+]/g,""); if (n) phones.add(n);
+  });
+  Object.entries(rec).forEach(([k,v]) => {
+    if (/mobile|tele|phone|fax/i.test(k)) (v.match(/\+?\d[\d\s-]{7,}\d/g) || []).forEach(n => phones.add(n.replace(/[\s-]/g,"")));
+  });
+  const meta = doc.querySelector('meta[name="description"]')?.getAttribute("content") || "";
+  (meta.match(/\+251\d{9}/g) || []).forEach(n => phones.add(n));
+  rec["All Phones"] = [...phones].join("; ");
+
+  const marker = [...doc.querySelectorAll("strong,b")].find(e => /listed in the following/i.test(e.textContent));
+  if (marker){
+    const ol = [...doc.querySelectorAll("ol")].find(o => marker.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (ol){
+      rec["Categories"] = [...ol.querySelectorAll("li")].map(li =>
+        [...li.querySelectorAll("a")].map(a => a.textContent.replace(/\s+/g," ").trim()).filter(Boolean).join(" > ")
+      ).filter(Boolean).join("; ");
+    }
+  }
+  rec["AddisBiz Page"] = url;
+  return rec;
+}
+
+/* ---------- table / output ---------- */
+function columns(rows){
+  const set = new Set(); rows.forEach(r => Object.keys(r).forEach(k => set.add(k)));
+  const pref = PREFERRED.filter(k => set.has(k));
+  return [...pref, ...[...set].filter(k => !pref.includes(k))];
+}
+function allRows(){ return items.map(it => rowsByUrl.get(it.url)).filter(Boolean); }
+function failedItems(){ return items.filter(it => (rowsByUrl.get(it.url)?.Status || "").startsWith("Failed")); }
+
+function render(){
+  const rows = allRows(); if (!rows.length) return;
+  const cols = columns(rows).filter(c => c !== "Status" || rows.some(r => String(r.Status).startsWith("Failed")));
+  const thead = $("#tbl thead"), tbody = $("#tbl tbody");
+  thead.innerHTML = "";
+  const htr = document.createElement("tr");
+  ["#", ...cols].forEach(c => { const th = document.createElement("th"); th.textContent = c; htr.appendChild(th); });
+  thead.appendChild(htr);
+  tbody.innerHTML = "";
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr"); tr.style.animationDelay = Math.min(i, 14) * 25 + "ms";
+    const n = document.createElement("td"); n.textContent = i + 1; n.style.color = "var(--muted)"; tr.appendChild(n);
+    cols.forEach(c => {
+      const td = document.createElement("td"); td.textContent = r[c] ?? "";
+      if (c === "Categories") td.className = "wrap";
+      if (c === "Status" && String(r[c]).startsWith("Failed")) td.className = "bad";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  $("#results").classList.add("show");
+}
+
+function updateButtons(){
+  const has = allRows().length > 0, nf = failedItems().length;
+  $("#dlx").disabled = !has; $("#dlc").disabled = !has;
+  const rt = $("#retry"); rt.hidden = running || nf === 0; rt.textContent = "Retry " + nf;
+}
+
+/* ---------- multi-tab professional excel ---------- */
+function sanitizeSheetName(name, existingNames) {
+  let clean = (name || "Category").replace(/[\\/?*\[\]:]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean) clean = "Category";
+  if (clean.length > 27) clean = clean.substring(0, 27).trim();
+  let candidate = clean;
+  let counter = 2;
+  while (existingNames.has(candidate.toLowerCase())) {
+    const suffix = ` (${counter++})`;
+    candidate = clean.substring(0, 31 - suffix.length) + suffix;
+  }
+  existingNames.add(candidate.toLowerCase());
+  return candidate;
+}
+
+function createStyledSheet(rows, cols) {
+  const data = rows.map((r, i) => {
+    const item = { "#": i + 1 };
+    cols.forEach(c => { if (c !== "#") item[c] = r[c] ?? ""; });
+    return item;
+  });
+  const ws = XLSX.utils.json_to_sheet(data, { header: cols });
+  Object.keys(ws).forEach(cellKey => {
+    if (cellKey.startsWith("!")) return;
+    const cell = ws[cellKey];
+    if (cell && typeof cell.v === "string" && /^\+?\d{6,}$/.test(cell.v.trim())) {
+      cell.t = 's';
+    }
+  });
+  ws["!cols"] = cols.map(c => {
+    let maxLen = c.length;
+    const sample = data.slice(0, 200);
+    sample.forEach(row => {
+      const val = String(row[c] || "");
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    return { wch: Math.min(60, Math.max(12, maxLen + 3)) };
+  });
+  ws["!freeze"] = { xSplit: "A", ySplit: "2" };
+  ws["!views"] = [{ state: "frozen", ySplit: 1 }];
+  ws["!autofilter"] = { ref: ws["!ref"] };
+  return ws;
+}
+
+const fileStamp = () => new Date().toISOString().slice(0,10);
+
+$("#dlx").onclick = () => {
+  const rows = allRows();
+  if (!rows.length) return;
+  if (typeof XLSX === "undefined"){ alert("Excel library didn't load (offline?). Saving CSV instead."); return $("#dlc").click(); }
+  
+  const wb = XLSX.utils.book_new();
+  const existingNames = new Set();
+  const globalCols = columns(rows);
+
+  // 1. Master Tab: All Companies
+  const masterWs = createStyledSheet(rows, globalCols);
+  XLSX.utils.book_append_sheet(wb, masterWs, sanitizeSheetName("All Companies", existingNames));
+
+  // 2. Individual Category Tabs
+  const grouped = new Map();
+  rows.forEach(r => {
+    const cat = r["Source Category"] || "Category";
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat).push(r);
+  });
+
+  grouped.forEach((catRows, catTitle) => {
+    const sheetName = sanitizeSheetName(catTitle, existingNames);
+    const catCols = columns(catRows);
+    const catWs = createStyledSheet(catRows, catCols);
+    XLSX.utils.book_append_sheet(wb, catWs, sheetName);
+  });
+
+  XLSX.writeFile(wb, `addisbiz_${fileStamp()}.xlsx`);
+  log("Downloaded Excel with " + wb.SheetNames.length + " sheet tabs.", "ok");
+};
+
+$("#dlc").onclick = () => {
+  const rows = allRows().map((r,i) => ({"#": i+1, ...r})), cols = columns(rows);
+  const esc = v => '"' + String(v ?? "").replace(/"/g,'""') + '"';
+  const csv = "\ufeff" + [cols.map(esc).join(","), ...rows.map(r => cols.map(c => esc(r[c])).join(","))].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
+  a.download = "addisbiz_" + fileStamp() + ".csv"; a.click();
+};
+
+/* ---------- run ---------- */
+async function fetchDetails(list){
+  let done = 0; const total = list.length, queue = list.slice();
+  const par = Math.max(1, Math.min(8, +$("#par").value || 3));
+  const progress = () => {
+    setOrb({pct: total ? done / total * 100 : 0,
+      big: Math.round(total ? done / total * 100 : 0) + "<small>%</small>", small: done + " / " + total});
+    $("#meta").textContent = done + " of " + total;
+  };
+  progress();
+  async function worker(){
+    while (queue.length && !stopFlag){
+      const it = queue.shift();
+      try{
+        const html = await getHtml(it.url);
+        const rec = parseDetail(html, it.url);
+        if (!rec.Company) rec.Company = it.name;
+        rec["Source Category"] = it.categoryTitle || "";
+        rec["Source List"] = it.list; 
+        rec["Status"] = "OK";
+        rowsByUrl.set(it.url, rec);
+        log("✓ " + (rec.Company || it.url) + (rec["All Phones"] ? "  " + rec["All Phones"] : ""), "ok");
+      }catch(e){
+        if (stopFlag) break;
+        rowsByUrl.set(it.url, {
+          Company: it.name, 
+          "Source Category": it.categoryTitle || "",
+          "Source List": it.list, 
+          "AddisBiz Page": it.url, 
+          Status: "Failed: " + e.message
+        });
+        log("✗ " + (it.name || it.url) + " — " + e.message, "err");
+      }
+      done++; progress();
+      if (done % 6 === 0 || done === total) render();
+      await sleep(+$("#delay").value || 0);
+    }
+  }
+  await Promise.all(Array.from({length: par}, worker));
+  render();
+}
+
+function finish(){
+  running = false;
+  const bad = failedItems().length, ok = allRows().length - bad;
+  setState("done"); indet = false;
+  if (stopFlag){ $("#meta").textContent = "Stopped · " + ok + " saved"; }
+  else if (ok === 0){
+    target = 0; cur = 0;
+    $("#big").innerHTML = '<span style="color:var(--amber)">!</span>'; $("#sub").textContent = "\u00a0";
+    $("#meta").textContent = problem || "Nothing was read. Open Log.";
+    $("#results").classList.add("show");
+    document.querySelector('#seg button[data-tab="log"]').click();
+  }
+  else { target = 108; showCheck(); $("#meta").textContent = ok + " companies" + (bad ? " · " + bad + " failed" : ""); }
+  $("#go").setAttribute("aria-label", "Start");
+  updateButtons();
+}
+
+async function start(){
+  const raw = $("#urls").value.trim();
+  const parsedCategories = parseInputCategories(raw);
+
+  if (!parsedCategories.length){
+    $("#bar").animate([{transform:"translateX(0)"},{transform:"translateX(-8px)"},{transform:"translateX(8px)"},{transform:"translateX(-5px)"},{transform:"translateX(0)"}],{duration:380});
+    ta.focus(); return;
+  }
+  stopFlag = false; running = true; items = []; rowsByUrl = new Map(); problem = "";
+  $("#log").innerHTML = ""; $("#tbl thead").innerHTML = ""; $("#tbl tbody").innerHTML = ""; $("#results").classList.remove("show");
+  $("#popwrap").classList.remove("open"); $("#gear").classList.remove("open");
+  cur = 0; target = 0; $("#meta").textContent = "";
+  setState("running"); $("#go").setAttribute("aria-label", "Stop"); updateButtons();
+  setOrb({big: "0", small: "Scanning", scanning: true});
+  
+  try{
+    const seen = new Set();
+    for (const cat of parsedCategories){
+      if (stopFlag) break;
+      if (cat.isCompany){
+        if (!seen.has(cat.url)){ 
+          seen.add(cat.url); 
+          items.push({url: cat.url, name: "", list: "(direct link)", categoryTitle: "Direct Company"}); 
+        } 
+        continue; 
+      }
+      log("Listing " + cat.title);
+      const found = await crawlList(cat, items.length);
+      found.forEach(f => { if (!seen.has(f.url)){ seen.add(f.url); items.push(f); } });
+    }
+    log("Found " + items.length + " companies");
+    if (items.length && !stopFlag){ target = 0; cur = 0; indet = false; await fetchDetails(items); }
+  }catch(e){ log("Error: " + e.message, "err"); }
+  finish();
+}
+
+$("#retry").onclick = async () => {
+  stopFlag = false; running = true; setState("running"); updateButtons(); $("#meta").textContent = ""; cur = 0; target = 0;
+  const f = failedItems(); log("Retrying " + f.length);
+  await fetchDetails(f);
+  finish();
+};
+</script>
+</body>
+</html>

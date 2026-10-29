@@ -1,0 +1,13 @@
+{
+  "name": "addisbiz-extractor",
+  "version": "1.0.0",
+  "description": "AddisBiz Business Directory Extractor with Excel Export",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["addisbiz", "scraper", "extractor", "excel"],
+  "author": "",
+  "license": "MIT"
+}
