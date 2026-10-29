@@ -25,7 +25,15 @@ const server = http.createServer(async (req, res) => {
   // Health check
   if (parsedUrl.pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', server: 'AddisBiz Localhost Proxy' }));
+    res.end(JSON.stringify({
+      status: 'ok',
+      server: 'AddisBiz Extractor',
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'production',
+      uptime_seconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      url: 'https://addisbiz.onrender.com'
+    }));
     return;
   }
 
