@@ -339,11 +339,13 @@ async function getHtml(url){
   let order = sel === "auto" ? (isLocalhost ? ["local","allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"] : ["allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"]) : [sel];
   if (sel === "auto" && goodProxy) order = [goodProxy, ...order.filter(p => p !== goodProxy)];
   const errs = {};
-  for (let round = 0; round < 2; round++){
+  const TIMEOUT_MS = 45000; // 45s — handles Render cold starts
+  const MAX_ROUNDS = 3;
+  for (let round = 0; round < MAX_ROUNDS; round++){
     for (const p of order){
       if (stopFlag) throw new Error("Stopped");
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 30000);
+      const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       try{
         const res = await fetch(PROXIES[p].url(url), {signal: ctrl.signal});
         clearTimeout(t);
@@ -355,10 +357,17 @@ async function getHtml(url){
         return txt;
       }catch(e){
         clearTimeout(t);
-        errs[p] = e.name === "AbortError" ? "timeout" : (/failed to fetch/i.test(e.message) ? "blocked" : e.message);
+        const reason = e.name === "AbortError" ? "timeout" : (/failed to fetch/i.test(e.message) ? "blocked" : e.message);
+        errs[p] = reason;
+        // On timeout, log a warning and wait with exponential backoff before retrying
+        if (e.name === "AbortError" && round < MAX_ROUNDS - 1){
+          const wait = (round + 1) * 2000;
+          log(`⏳ ${p} timed out — retrying in ${wait/1000}s (attempt ${round+1}/${MAX_ROUNDS})…`, "warn");
+          await sleep(wait);
+        }
       }
     }
-    await sleep(900);
+    if (round < MAX_ROUNDS - 1) await sleep(1200 * (round + 1));
   }
   throw new Error(Object.entries(errs).map(([k,v]) => k + ": " + v).join(" | "));
 }
