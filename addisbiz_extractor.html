@@ -189,9 +189,8 @@
   <div class="popwrap" id="popwrap"><div class="popin"><div class="pop glass">
     <div><label for="proxy">Connection</label>
       <select id="proxy">
-        <option value="auto">Auto (Best Proxy)</option>
+        <option value="auto">Auto (Server Proxy)</option>
         <option value="local">Server Proxy</option>
-        <option value="corsproxyOrg">CorsProxy.org</option>
         <option value="codetabs">CodeTabs</option>
         <option value="direct">Direct</option>
       </select></div>
@@ -227,10 +226,9 @@
 <script>
 const $ = s => document.querySelector(s);
 const PROXIES = {
-  local:        {url: u => "/api/proxy?url=" + encodeURIComponent(u)},
-  corsproxyOrg: {url: u => "https://corsproxy.org/?" + encodeURIComponent(u)},
-  codetabs:     {url: u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u)},
-  direct:       {url: u => u}
+  local:    {url: u => "/api/proxy?url=" + encodeURIComponent(u)},
+  codetabs: {url: u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u)},
+  direct:   {url: u => u}
 };
 let goodProxy = "local";
 
@@ -422,8 +420,7 @@ function parseInputCategories(text) {
 /* ---------- Network with Resilient Proxy Order ---------- */
 async function getHtml(url){
   const sel = $("#proxy").value;
-  // Always include local server proxy as primary, then corsproxyOrg, then codetabs
-  let order = sel === "auto" ? ["local", "corsproxyOrg", "codetabs", "direct"] : [sel];
+  let order = sel === "auto" ? ["local", "codetabs", "direct"] : [sel];
   if (sel === "auto" && goodProxy && goodProxy !== "local") {
     order = [goodProxy, ...order.filter(p => p !== goodProxy)];
   }
@@ -443,8 +440,8 @@ async function getHtml(url){
         clearTimeout(t);
         if (!res.ok) throw new Error("HTTP " + res.status);
         let txt = await res.text();
-        if (txt.includes("Just a moment...") || txt.includes("cf-mitigated")) {
-          throw new Error("Cloudflare challenge");
+        if (txt.includes("Just a moment...") || txt.includes("cf-mitigated") || txt.includes("hidemy.name") || txt.includes("VPN service for secure")) {
+          throw new Error("Invalid or challenged reply");
         }
         if (txt.length < 250 || !/(?:<html|<body|<!doctype|<div|business|directory)/i.test(txt)) {
           throw new Error("unexpected reply");
@@ -546,39 +543,78 @@ function extractListings(doc, base, type){
   return out;
 }
 
-/* ---------- Category Crawler ---------- */
+/* ---------- Category Crawler with Auto-Next Pagination ---------- */
+function findNextPageUrl(doc, currentUrl, type) {
+  // 1. Search for Next button in pagination container
+  const pag = doc.querySelector(".pagination, .pagination-list, .pages, nav, ul.pagination");
+  const candidates = pag ? [...pag.querySelectorAll("a[href]")] : [...doc.querySelectorAll("a[href]")];
+  
+  for (const a of candidates) {
+    const text = a.textContent.trim().toLowerCase();
+    const title = (a.getAttribute("title") || "").trim().toLowerCase();
+    const rel = (a.getAttribute("rel") || "").trim().toLowerCase();
+    const aria = (a.getAttribute("aria-label") || "").trim().toLowerCase();
+    
+    if (text === "next" || title === "next" || rel === "next" || aria === "next" || text === "›" || text === "»") {
+      const rawHref = a.getAttribute("href");
+      if (rawHref && !rawHref.startsWith("#") && !rawHref.startsWith("javascript")) {
+        try {
+          return new URL(rawHref, currentUrl).href;
+        } catch (_) {}
+      }
+    }
+  }
+
+  // 2. Look for page:(current+1) link in 2merkato pagination
+  if (type === "merkato") {
+    const pageMatch = currentUrl.match(/\/page:(\d+)/i);
+    const curNum = pageMatch ? parseInt(pageMatch[1], 10) : 1;
+    const nextNum = curNum + 1;
+    const targetLink = [...doc.querySelectorAll('a[href*="page:"]')].find(a => {
+      const m = (a.getAttribute("href") || "").match(/\/page:(\d+)/i);
+      return m && parseInt(m[1], 10) === nextNum;
+    });
+    if (targetLink) {
+      try {
+        return new URL(targetLink.getAttribute("href"), currentUrl).href;
+      } catch(_) {}
+    }
+  }
+
+  // 3. Fallbacks for AddisBiz & Ezega query parameters
+  if (type === "addisbiz") {
+    try {
+      const u = new URL(currentUrl);
+      const curPage = parseInt(u.searchParams.get("page") || "1", 10);
+      u.searchParams.set("page", curPage + 1);
+      return u.toString();
+    } catch (_) {}
+  }
+
+  if (type === "ezega") {
+    try {
+      const u = new URL(currentUrl);
+      const curPage = parseInt(u.searchParams.get("page") || "0", 10);
+      u.searchParams.set("page", curPage + 1);
+      return u.toString();
+    } catch (_) {}
+  }
+
+  return null;
+}
+
 async function crawlList(catInfo, already){
-  const baseUrl = catInfo.url;
+  let pageUrl = catInfo.url;
   const type = catInfo.type;
-  const found = [], seen = new Set();
-  const maxPages = type === "ebd" ? 1 : 100;
+  const found = [], seen = new Set(), seenPages = new Set([pageUrl]);
+  const maxPages = type === "ebd" ? 1 : 150;
 
   for (let p = 1; p <= maxPages; p++){
     if (stopFlag) break;
-    let pageUrl = baseUrl;
-
-    try {
-      if (type === "addisbiz") {
-        const u = new URL(baseUrl);
-        if (p > 1) u.searchParams.set("page", p);
-        else u.searchParams.delete("page");
-        pageUrl = u.toString();
-      } else if (type === "merkato") {
-        if (p > 1) {
-          const clean = baseUrl.replace(/\/page:\d+/i, '').replace(/\/+$/, '');
-          pageUrl = `${clean}/page:${p}`;
-        }
-      } else if (type === "ezega") {
-        const u = new URL(baseUrl);
-        if (p > 1) u.searchParams.set("page", p - 1);
-        pageUrl = u.toString();
-      }
-    } catch (_) {}
 
     let html;
     try{ html = await getHtml(pageUrl); }
     catch(e){
-      // If page > 1 fails with 404, that's just the end of pages
       if (p > 1) break;
       log(`[${getDirectoryDisplayName(type)}] Page ${p} failed → ${e.message}`, "err");
       problem = `Couldn't reach ${getDirectoryDisplayName(type)}. Try again or switch proxy.`;
@@ -627,7 +663,7 @@ async function crawlList(catInfo, already){
 
       if (subcats.length) {
         log(`Discovered ${subcats.length} subcategories. Crawling subcategories…`, "ok");
-        for (const sub of subcats.slice(0, 20)) {
+        for (const sub of subcats.slice(0, 25)) {
           if (stopFlag) break;
           const subFound = await crawlList(sub, already + found.length);
           subFound.forEach(x => { if (!seen.has(x.url)) { seen.add(x.url); found.push(x); } });
@@ -644,7 +680,7 @@ async function crawlList(catInfo, already){
 
     list.forEach(x => { 
       seen.add(x.url); 
-      x.list = baseUrl; 
+      x.list = catInfo.url; 
       x.categoryTitle = catInfo.title;
       found.push(x); 
     });
@@ -652,6 +688,19 @@ async function crawlList(catInfo, already){
     log(`[${getDirectoryDisplayName(type)}] Page ${p}: ${list.length} companies (total ${found.length})`);
     setOrb({big: String(already + found.length), small: "Scanning", scanning: true});
     $("#meta").textContent = (already + found.length) + " found";
+
+    if (type === "ebd") break;
+
+    // Auto-navigate to Next page via pagination bar
+    const nextUrl = findNextPageUrl(doc, pageUrl, type);
+    if (!nextUrl || nextUrl === pageUrl || seenPages.has(nextUrl)) {
+      if (p > 1) log(`[${getDirectoryDisplayName(type)}] Completed all ${p} pages.`, "ok");
+      break;
+    }
+
+    seenPages.add(nextUrl);
+    pageUrl = nextUrl;
+    log(`[${getDirectoryDisplayName(type)}] Auto-navigating to next page (${p + 1})…`);
     await sleep(+$("#delay").value || 0);
   }
   return found;

@@ -9,7 +9,7 @@ const url = require('url');
 const PORT = process.env.PORT || 3000;
 const HTML_FILE = path.join(__dirname, 'addisbiz_extractor.html');
 
-const BROWSER_HEADERS = {
+const CHROME_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
@@ -23,8 +23,13 @@ const BROWSER_HEADERS = {
   'Upgrade-Insecure-Requests': '1'
 };
 
+const BOT_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9'
+};
+
 const server = http.createServer(async (req, res) => {
-  // Enable CORS for all requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
@@ -44,7 +49,7 @@ const server = http.createServer(async (req, res) => {
       status: 'ok',
       server: 'Ethiopian Business Directories Extractor',
       supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
-      version: '2.1.0',
+      version: '2.2.0',
       environment: process.env.NODE_ENV || 'production',
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -53,7 +58,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Built-in CORS Proxy endpoint with Cloudflare resilience
+  // Built-in CORS Proxy endpoint
   if (parsedUrl.pathname === '/api/proxy') {
     let targetUrl = parsedUrl.query.url;
     if (!targetUrl) {
@@ -62,32 +67,35 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Auto-normalize ethiopiabusinessdirectory.com naked domain to www to avoid SSL mismatch
     if (/^https?:\/\/ethiopiabusinessdirectory\.com/i.test(targetUrl)) {
       targetUrl = targetUrl.replace(/^https?:\/\/ethiopiabusinessdirectory\.com/i, 'https://www.ethiopiabusinessdirectory.com');
     }
 
+    // For Ezega, use Googlebot headers to seamlessly pass Cloudflare verification
+    const isEzega = /ezega\.com/i.test(targetUrl);
+    const primaryHeaders = isEzega ? BOT_HEADERS : CHROME_HEADERS;
+
     try {
       let response = await fetch(targetUrl, {
-        headers: BROWSER_HEADERS,
+        headers: primaryHeaders,
         redirect: 'follow',
         signal: AbortSignal.timeout(30000)
       });
 
       let body = await response.text();
 
-      // If direct request is challenged by Cloudflare or blocked, fallback to resilient bridge
-      if ((response.status === 403 || response.status === 503 || body.includes('Just a moment...')) && !targetUrl.includes('corsproxy.org')) {
+      // If challenged by Cloudflare, retry with alternative bot profile
+      if ((response.status === 403 || response.status === 503 || body.includes('Just a moment...'))) {
         try {
-          const fallbackUrl = `https://corsproxy.org/?${encodeURIComponent(targetUrl)}`;
-          const fbResponse = await fetch(fallbackUrl, {
-            headers: BROWSER_HEADERS,
+          const retryRes = await fetch(targetUrl, {
+            headers: BOT_HEADERS,
+            redirect: 'follow',
             signal: AbortSignal.timeout(25000)
           });
-          const fbBody = await fbResponse.text();
-          if (fbResponse.ok && fbBody.length > 500 && !fbBody.includes('Just a moment...')) {
-            response = fbResponse;
-            body = fbBody;
+          const retryBody = await retryRes.text();
+          if (retryRes.ok && !retryBody.includes('Just a moment...')) {
+            response = retryRes;
+            body = retryBody;
           }
         } catch (_) {}
       }
@@ -98,28 +106,13 @@ const server = http.createServer(async (req, res) => {
       });
       res.end(body);
     } catch (err) {
-      // Secondary fallback on error
-      try {
-        const fallbackUrl = `https://corsproxy.org/?${encodeURIComponent(targetUrl)}`;
-        const fbResponse = await fetch(fallbackUrl, {
-          headers: BROWSER_HEADERS,
-          signal: AbortSignal.timeout(20000)
-        });
-        const fbBody = await fbResponse.text();
-        if (fbResponse.ok) {
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(fbBody);
-          return;
-        }
-      } catch (_) {}
-
       res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Proxy Error: ' + err.message);
     }
     return;
   }
 
-  // Serve the single-file HTML app
+  // Serve single-file HTML app
   if (parsedUrl.pathname === '/' || parsedUrl.pathname === '/index.html' || parsedUrl.pathname === '/addisbiz_extractor.html') {
     if (fs.existsSync(HTML_FILE)) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
