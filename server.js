@@ -1,4 +1,5 @@
-// AddisBiz Extractor - Localhost Server & Proxy
+// Ethiopian Business Directories Extractor - Server & Proxy
+// Supports: AddisBiz, EthiopiaBusinessDirectory, Ezega, 2merkato
 // Zero dependencies: runs with native Node.js (v18+)
 const http = require('http');
 const fs = require('fs');
@@ -9,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const HTML_FILE = path.join(__dirname, 'addisbiz_extractor.html');
 
 const server = http.createServer(async (req, res) => {
-  // Enable CORS for all local requests
+  // Enable CORS for all requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
@@ -27,8 +28,9 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
-      server: 'AddisBiz Extractor',
-      version: '1.0.0',
+      server: 'Ethiopian Business Directories Extractor',
+      supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
+      version: '2.0.0',
       environment: process.env.NODE_ENV || 'production',
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -39,11 +41,16 @@ const server = http.createServer(async (req, res) => {
 
   // Built-in CORS Proxy endpoint
   if (parsedUrl.pathname === '/api/proxy') {
-    const targetUrl = parsedUrl.query.url;
+    let targetUrl = parsedUrl.query.url;
     if (!targetUrl) {
       res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Missing url query parameter');
       return;
+    }
+
+    // Auto-normalize ethiopiabusinessdirectory.com naked domain to www to avoid SSL mismatch
+    if (/^https?:\/\/ethiopiabusinessdirectory\.com/i.test(targetUrl)) {
+      targetUrl = targetUrl.replace(/^https?:\/\/ethiopiabusinessdirectory\.com/i, 'https://www.ethiopiabusinessdirectory.com');
     }
 
     try {
@@ -53,7 +60,8 @@ const server = http.createServer(async (req, res) => {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9'
         },
-        signal: AbortSignal.timeout(30000)
+        redirect: 'follow',
+        signal: AbortSignal.timeout(35000)
       });
 
       const body = await response.text();
@@ -101,7 +109,8 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n=================================================`);
-  console.log(`  AddisBiz Extractor Server is running!`);
+  console.log(`  Ethiopian Business Directories Extractor running!`);
+  console.log(`  Supported: AddisBiz, EthiopiaBusinessDirectory, Ezega, 2merkato`);
   console.log(`  Open in browser: http://localhost:${PORT}`);
   console.log(`  Local proxy:    http://localhost:${PORT}/api/proxy?url=...`);
   console.log(`=================================================\n`);

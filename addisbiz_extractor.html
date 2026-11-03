@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AddisBiz</title>
+<title>AddisBiz & Ethiopian Business Directories Extractor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -35,11 +35,11 @@
   @keyframes d1{to{transform:translate(10vw,8vh)}}
   @keyframes d2{to{transform:translate(-8vw,10vh)}}
 
-  main{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:clamp(56px,12vh,110px) 22px 90px;
+  main{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:clamp(46px,9vh,80px) 22px 90px;
        display:flex;flex-direction:column;align-items:center}
 
-  /* liquid iridescent title */
-  h1{margin:0 0 clamp(26px,5vh,44px);font-size:clamp(48px,9vw,82px);line-height:1.02;font-weight:700;letter-spacing:-.045em;
+  /* title */
+  h1{margin:0 0 8px;font-size:clamp(38px,7vw,64px);line-height:1.05;font-weight:700;letter-spacing:-.04em;text-align:center;
      background:linear-gradient(100deg,var(--ink) 0%,var(--ink) 30%,#38bdf8 42%,#a78bff 52%,#ff8fb8 58%,#38bdf8 66%,var(--ink) 78%,var(--ink) 100%);
      background-size:320% 100%;background-position:100% 0;
      -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
@@ -48,15 +48,24 @@
   @keyframes titleIn{to{opacity:1;filter:none;transform:none}}
   @keyframes sheen{0%{background-position:100% 0}55%,100%{background-position:0% 0}}
 
+  .subtitle{color:var(--muted);font-size:14px;font-weight:500;margin-bottom:20px;text-align:center;max-width:540px}
+
+  /* badge row */
+  .badges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:24px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:99px;
+         background:var(--fill);color:var(--muted);border:1px solid var(--line);text-decoration:none;transition:all .2s var(--ease)}
+  .badge:hover{color:var(--ink);border-color:var(--blue);background:var(--glass)}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--blue)}
+
   .glass{background:var(--glass);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);
          border:1px solid var(--edge);box-shadow:var(--shadow)}
 
   /* input pill */
-  .bar{width:100%;max-width:560px;border-radius:26px;display:flex;align-items:center;gap:4px;padding:6px 6px 6px 20px;
+  .bar{width:100%;max-width:620px;border-radius:26px;display:flex;align-items:center;gap:4px;padding:6px 6px 6px 20px;
        transition:box-shadow .5s var(--ease),border-color .4s;opacity:0;animation:fadeUp .9s var(--ease) .25s forwards}
   .bar:focus-within{box-shadow:0 0 0 4px rgba(10,132,255,.16),var(--shadow);border-color:rgba(10,132,255,.45)}
-  textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:16px;resize:none;
-           padding:13px 0;min-height:48px;max-height:132px;line-height:1.4;overflow-y:auto;outline:none;box-shadow:none}
+  textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:15px;resize:none;
+           padding:12px 0;min-height:48px;max-height:132px;line-height:1.4;overflow-y:auto;outline:none;box-shadow:none}
   textarea:focus,textarea:focus-visible{outline:none}
   textarea::placeholder{color:var(--muted)}
   .icon,.go{border:0;cursor:pointer;display:grid;place-items:center;flex:none;transition:transform .35s var(--ease),background .25s,color .25s,box-shadow .3s}
@@ -74,7 +83,7 @@
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
   /* settings popover */
-  .popwrap{width:100%;max-width:560px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease)}
+  .popwrap{width:100%;max-width:620px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease)}
   .popwrap.open{grid-template-rows:1fr}
   .popin{min-height:0;overflow:hidden}
   .pop{margin-top:12px;border-radius:20px;padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
@@ -87,8 +96,8 @@
   .stage{width:100%;display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .9s var(--ease),opacity .6s}
   body[data-state=running] .stage,body[data-state=done] .stage{grid-template-rows:1fr;opacity:1}
   .stage-in{min-height:0;overflow:hidden}
-  .stage-pad{display:flex;flex-direction:column;align-items:center;gap:18px;padding:48px 40px 10px}
-  .orb-wrap{position:relative;width:200px;height:200px}
+  .stage-pad{display:flex;flex-direction:column;align-items:center;gap:18px;padding:40px 40px 10px}
+  .orb-wrap{position:relative;width:190px;height:190px}
   .halo{position:absolute;inset:-8px;border-radius:50%;background:conic-gradient(var(--blue),var(--violet),#ff8fb8,var(--blue));
         filter:blur(24px);opacity:.24;animation:spin 9s linear infinite;transition:background .5s}
   .ring{position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 0deg,var(--blue),var(--violet),#ff8fb8,var(--blue));
@@ -108,10 +117,10 @@
   .wave.b{background:linear-gradient(180deg,rgba(100,210,255,.45),rgba(10,132,255,.45));top:calc(100% - var(--lvl,0) * 1% - 5px);animation:slide 8.5s linear infinite reverse}
   @keyframes slide{from{-webkit-mask-position:0 0,0 13px;mask-position:0 0,0 13px}to{-webkit-mask-position:160px 0,0 13px;mask-position:160px 0,0 13px}}
   .num{position:absolute;inset:0;display:grid;place-content:center;text-align:center;z-index:2;pointer-events:none}
-  .big{font-size:52px;font-weight:600;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums}
-  .big small{font-size:24px;font-weight:600;margin-left:2px;opacity:.55}
+  .big{font-size:50px;font-weight:600;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums}
+  .big small{font-size:22px;font-weight:600;margin-left:2px;opacity:.55}
   .sub{margin-top:8px;font-size:13px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
-  .check{width:64px;height:64px;margin:0 auto;display:block}
+  .check{width:60px;height:60px;margin:0 auto;display:block}
   .check path{fill:none;stroke:var(--ink);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .7s var(--ease) .1s forwards}
   @keyframes draw{to{stroke-dashoffset:0}}
   .meta{font-size:14px;color:var(--muted);font-weight:500;min-height:20px}
@@ -135,7 +144,7 @@
   .panel{margin-top:12px;display:none}
   .panel.on{display:block;animation:fade .5s var(--ease)}
   @keyframes fade{from{opacity:0;transform:translateY(5px)}}
-  .tablewrap{overflow:auto;max-height:380px;border-radius:14px;background:rgba(127,127,127,.05)}
+  .tablewrap{overflow:auto;max-height:420px;border-radius:14px;background:rgba(127,127,127,.05)}
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:11px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
   tbody tr:last-child td{border-bottom:0}
@@ -147,7 +156,7 @@
   #log{height:300px;overflow:auto;border-radius:14px;background:rgba(127,127,127,.05);padding:12px 14px;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
   #log .err{color:var(--bad)} #log .ok{color:var(--ok)} #log .warn{color:var(--amber)}
 
-  @media (max-width:560px){ .pop{grid-template-columns:1fr} .orb-wrap{width:176px;height:176px} .big{font-size:46px} }
+  @media (max-width:560px){ .pop{grid-template-columns:1fr} .orb-wrap{width:160px;height:160px} .big{font-size:42px} }
   @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important} h1{filter:none;opacity:1} }
 </style>
 </head>
@@ -156,10 +165,18 @@
 <div class="bg"><i></i><i></i></div>
 
 <main>
-  <h1>AddisBiz</h1>
+  <h1>AddisBiz Extractor</h1>
+  <div class="subtitle">Universal multi-tab extractor for Ethiopian business directories</div>
+
+  <div class="badges">
+    <span class="badge" title="AddisBiz Directory"><span class="dot"></span>addisbiz.com</span>
+    <span class="badge" title="2merkato Directory"><span class="dot"></span>2merkato.com</span>
+    <span class="badge" title="Ezega Business Guide"><span class="dot"></span>businessguide.ezega.com</span>
+    <span class="badge" title="Ethiopia Business Directory"><span class="dot"></span>ethiopiabusinessdirectory.com</span>
+  </div>
 
   <div class="bar glass" id="bar">
-    <textarea id="urls" rows="1" spellcheck="false" placeholder="Paste links" aria-label="AddisBiz category links"></textarea>
+    <textarea id="urls" rows="1" spellcheck="false" placeholder="Paste category or business links from AddisBiz, 2merkato, Ezega, or EBD..." aria-label="Directory links"></textarea>
     <button class="icon" id="gear" type="button" aria-label="Settings" aria-expanded="false">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.4" fill="var(--bg)"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2.4" fill="var(--bg)"/></svg>
     </button>
@@ -172,11 +189,11 @@
   <div class="popwrap" id="popwrap"><div class="popin"><div class="pop glass">
     <div><label for="proxy">Connection</label>
       <select id="proxy">
-        <option value="auto">Auto</option><option value="local">Local Proxy</option><option value="allorigins">AllOrigins</option>
+        <option value="auto">Auto</option><option value="local">Server Proxy</option><option value="allorigins">AllOrigins</option>
         <option value="corsproxy">CorsProxy</option><option value="codetabs">CodeTabs</option><option value="direct">Direct</option>
       </select></div>
     <div><label for="par">Parallel</label><input type="number" id="par" min="1" max="8" value="3"></div>
-    <div><label for="delay">Delay ms</label><input type="number" id="delay" min="0" max="5000" step="100" value="300"></div>
+    <div><label for="delay">Delay ms</label><input type="number" id="delay" min="0" max="5000" step="100" value="250"></div>
   </div></div></div>
 
   <section class="stage" aria-live="polite"><div class="stage-in"><div class="stage-pad">
@@ -216,9 +233,14 @@ const PROXIES = {
   direct:      {url: u => u}
 };
 let goodProxy = null, problem = "", isLocalhost = false;
-const PREFERRED = ["#","Company","Mobile","Mobile 1","Mobile 2","Telephone 1","Telephone 2","Telephone","Fax","Email",
-  "Website","Address","Location","Number of Employees","All Phones","Categories","Source Category","Source List","AddisBiz Page","Status"];
-const DETAIL_RE = /\/business-directory\/(\d+-[^\/?#]+)\/?$/;
+
+const PREFERRED = [
+  "#", "Company", "Directory", "Mobile", "Mobile 1", "Mobile 2",
+  "Telephone 1", "Telephone 2", "Telephone", "All Phones", "Fax",
+  "Email", "Website", "Location", "City", "Address", "Number of Employees",
+  "Categories", "Primary Category", "Source Category", "Source List",
+  "Directory Page", "Status"
+];
 
 let stopFlag = false, items = [], rowsByUrl = new Map(), running = false;
 
@@ -229,7 +251,7 @@ function log(msg, cls){
 }
 function setState(s){ document.body.dataset.state = s; }
 
-/* detect local server */
+/* detect server proxy */
 (async function checkLocal(){
   try {
     const r = await fetch("/api/health");
@@ -237,7 +259,7 @@ function setState(s){ document.body.dataset.state = s; }
   } catch(_) {}
 })();
 
-/* liquid level */
+/* liquid level animation */
 let target = 0, cur = 0, indet = false;
 (function loop(t){
   cur += (target - cur) * 0.08; if (Math.abs(target - cur) < 0.03) cur = target;
@@ -272,21 +294,69 @@ ta.addEventListener("input", grow);
 ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if (!running) start(); } });
 $("#go").onclick = () => { if (running){ stopFlag = true; } else start(); };
 
-/* ---------- smart url parser ---------- */
-function generateCategoryTitle(urlStr) {
+/* ---------- Directory Identifier ---------- */
+function identifyDirectory(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    const host = u.hostname.toLowerCase();
+    if (host.includes("addisbiz.com")) return "addisbiz";
+    if (host.includes("2merkato.com")) return "merkato";
+    if (host.includes("ezega.com")) return "ezega";
+    if (host.includes("ethiopiabusinessdirectory.com")) return "ebd";
+  } catch (_) {}
+  return null;
+}
+
+function getDirectoryDisplayName(type) {
+  switch(type) {
+    case "addisbiz": return "AddisBiz";
+    case "merkato":  return "2merkato";
+    case "ezega":    return "Ezega";
+    case "ebd":      return "EthiopiaBusinessDirectory";
+    default:         return "Directory";
+  }
+}
+
+/* ---------- Title & URL Parser ---------- */
+function generateCategoryTitle(urlStr, type) {
   try {
     const parsed = new URL(urlStr);
-    const pathParts = parsed.pathname.split('/').filter(Boolean);
-    if (pathParts.length >= 2) {
-      const sub = pathParts.slice(1).map(p => {
-        p = p.replace(/^\d+-/, '');
-        return p.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      });
-      let name = sub.join(' - ');
-      if (parsed.searchParams.has('city')) {
-        name += ` (${parsed.searchParams.get('city')})`;
+    if (type === "addisbiz") {
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2) {
+        const sub = pathParts.slice(1).map(p => {
+          p = p.replace(/^\d+-/, '');
+          return p.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        });
+        let name = sub.join(' - ');
+        if (parsed.searchParams.has('city')) name += ` (${parsed.searchParams.get('city')})`;
+        return name;
       }
-      return name;
+      return "AddisBiz Category";
+    }
+
+    if (type === "merkato") {
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2 && /^\d+$/.test(pathParts[1])) {
+        return `2merkato Category ${pathParts[1]}`;
+      }
+      return "2merkato Directory";
+    }
+
+    if (type === "ezega") {
+      if (parsed.searchParams.has("category")) {
+        return `Ezega - ${parsed.searchParams.get("category")}`;
+      }
+      if (parsed.searchParams.has("cid")) {
+        return `Ezega Subcat ${parsed.searchParams.get("cid")}`;
+      }
+      return "Ezega Directory";
+    }
+
+    if (type === "ebd") {
+      const m = parsed.pathname.match(/\/category\/(\d+)/i);
+      if (m) return `EBD Category ${m[1]}`;
+      return "EBD Directory";
     }
   } catch (_) {}
   return "Category";
@@ -298,33 +368,59 @@ function parseInputCategories(text) {
   const rawMatches = text.match(/https?:\/\/[^\s"'<>]+/gi) || [];
 
   for (let u of rawMatches) {
+    // Unpack Google AMP links
     if (u.includes('ampproject.org')) {
       const ampShareMatch = u.match(/ampshare=([^&]+)/i);
       if (ampShareMatch) {
         u = decodeURIComponent(ampShareMatch[1]);
       } else {
-        const directMatch = u.match(/\/s\/(addisbiz\.com\/[^\?#]+)/i);
+        const directMatch = u.match(/\/s\/([^\?#]+)/i);
         if (directMatch) u = 'https://' + directMatch[1];
       }
     }
 
-    if (!/https?:\/\/(www\.)?addisbiz\.com\//i.test(u)) continue;
+    // Auto-normalize EBD naked domain
+    if (/^https?:\/\/ethiopiabusinessdirectory\.com/i.test(u)) {
+      u = u.replace(/^https?:\/\/ethiopiabusinessdirectory\.com/i, 'https://www.ethiopiabusinessdirectory.com');
+    }
+
+    const type = identifyDirectory(u);
+    if (!type) continue;
 
     try {
       const parsed = new URL(u);
-      parsed.searchParams.delete('page');
-      parsed.hash = '';
+      let isCompany = false;
+      let normalized = u;
 
-      let cleanPath = parsed.origin + parsed.pathname.replace(/\/+$/, '');
-      const queryStr = parsed.searchParams.toString();
-      const normalized = queryStr ? `${cleanPath}?${queryStr}` : cleanPath;
+      if (type === "addisbiz") {
+        parsed.searchParams.delete('page');
+        parsed.hash = '';
+        const cleanPath = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+        const queryStr = parsed.searchParams.toString();
+        normalized = queryStr ? `${cleanPath}?${queryStr}` : cleanPath;
+        isCompany = /\/business-directory\/(\d+-[^\/?#]+)\/?$/i.test(parsed.pathname);
+      } else if (type === "merkato") {
+        parsed.hash = '';
+        normalized = parsed.origin + parsed.pathname.replace(/\/page:\d+/i, '').replace(/\/+$/, '/');
+        isCompany = /\/directory\/(\d+-[^\/?#]+)\/?$/i.test(parsed.pathname);
+      } else if (type === "ezega") {
+        parsed.hash = '';
+        parsed.searchParams.delete('page');
+        normalized = parsed.toString();
+        isCompany = /action=BussinessDetail|bid=\d+/i.test(parsed.search);
+      } else if (type === "ebd") {
+        parsed.hash = '';
+        parsed.searchParams.delete('page');
+        normalized = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+        isCompany = /\/\d+\/([a-z0-9-]+)\/?$/i.test(parsed.pathname) && !parsed.pathname.includes('/category/');
+      }
 
       if (!seen.has(normalized)) {
         seen.add(normalized);
-        const isCompany = DETAIL_RE.test(parsed.pathname);
         urls.push({
           url: normalized,
-          title: isCompany ? "Direct Company" : generateCategoryTitle(normalized),
+          type: type,
+          title: isCompany ? "Direct Company" : generateCategoryTitle(normalized, type),
           isCompany: isCompany
         });
       }
@@ -333,33 +429,36 @@ function parseInputCategories(text) {
   return urls;
 }
 
-/* ---------- network ---------- */
+/* ---------- Network with Resilient Retries ---------- */
 async function getHtml(url){
   const sel = $("#proxy").value;
   let order = sel === "auto" ? (isLocalhost ? ["local","allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"] : ["allorigins","corsproxy","codetabs","alloriginsJ","thingproxy","direct"]) : [sel];
   if (sel === "auto" && goodProxy) order = [goodProxy, ...order.filter(p => p !== goodProxy)];
   const errs = {};
-  const TIMEOUT_MS = 45000; // 45s — handles Render cold starts
+  const TIMEOUT_MS = 45000;
   const MAX_ROUNDS = 3;
+
   for (let round = 0; round < MAX_ROUNDS; round++){
     for (const p of order){
       if (stopFlag) throw new Error("Stopped");
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       try{
-        const res = await fetch(PROXIES[p].url(url), {signal: ctrl.signal});
+        const proxyUrl = PROXIES[p].url(url);
+        const res = await fetch(proxyUrl, {signal: ctrl.signal});
         clearTimeout(t);
         if (!res.ok) throw new Error("HTTP " + res.status);
         let txt = await res.text();
         if (PROXIES[p].json){ txt = (JSON.parse(txt).contents) || ""; }
-        if (txt.length < 800 || !/addisbiz/i.test(txt)) throw new Error("unexpected reply");
+        if (txt.length < 250 || !/(?:<html|<body|<!doctype|<div|business|directory)/i.test(txt)) {
+          throw new Error("unexpected or empty reply");
+        }
         if (sel === "auto") goodProxy = p;
         return txt;
       }catch(e){
         clearTimeout(t);
         const reason = e.name === "AbortError" ? "timeout" : (/failed to fetch/i.test(e.message) ? "blocked" : e.message);
         errs[p] = reason;
-        // On timeout, log a warning and wait with exponential backoff before retrying
         if (e.name === "AbortError" && round < MAX_ROUNDS - 1){
           const wait = (round + 1) * 2000;
           log(`⏳ ${p} timed out — retrying in ${wait/1000}s (attempt ${round+1}/${MAX_ROUNDS})…`, "warn");
@@ -373,65 +472,179 @@ async function getHtml(url){
 }
 const parse = html => new DOMParser().parseFromString(html, "text/html");
 
-/* ---------- list pages ---------- */
-function extractListings(doc, base){
-  const cutoff = [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
-    .find(e => /^featured businesses$/i.test(e.textContent.replace(/\s+/g," ").trim()));
-  const all = [...doc.querySelectorAll("a[href]")];
-  let anchors = cutoff ? all.filter(a => cutoff.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING) : all;
-  
+/* ---------- Listings Extractor for All 4 Platforms ---------- */
+function extractListings(doc, base, type){
   const out = [], map = new Map();
-  const collect = list => list.forEach(el => {
-    if (el.closest(".featuredbusinesses, .featured, aside, #sidebar, .sidebar")) return;
-    let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
-    href = href.replace(/[?#].*$/, "");
-    if (!DETAIL_RE.test(href)) return;
-    let it = map.get(href); if (!it){ it = {url: href, name: ""}; map.set(href, it); out.push(it); }
-    const text = el.textContent.replace(/\s+/g," ").trim();
-    if (!it.name && text && !/more details/i.test(text) && !/^(mobile|office|tel)/i.test(text)) it.name = text;
-    if (!it.name){ const t = (el.getAttribute("title") || "").replace(/\s*Business Page\s*$/i,"").trim(); if (t) it.name = t; }
-  });
-  collect(anchors);
-  if (!out.length && cutoff) collect(all);
+
+  if (type === "addisbiz") {
+    const cutoff = [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
+      .find(e => /^featured businesses$/i.test(e.textContent.replace(/\s+/g," ").trim()));
+    const all = [...doc.querySelectorAll("a[href]")];
+    const anchors = cutoff ? all.filter(a => cutoff.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING) : all;
+    
+    anchors.forEach(el => {
+      if (el.closest(".featuredbusinesses, .featured, aside, #sidebar, .sidebar")) return;
+      let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+      href = href.replace(/[?#].*$/, "");
+      if (!/\/business-directory\/(\d+-[^\/?#]+)\/?$/i.test(href)) return;
+      let it = map.get(href); if (!it){ it = {url: href, name: "", type: "addisbiz"}; map.set(href, it); out.push(it); }
+      const text = el.textContent.replace(/\s+/g," ").trim();
+      if (!it.name && text && !/more details/i.test(text) && !/^(mobile|office|tel)/i.test(text)) it.name = text;
+      if (!it.name){ const t = (el.getAttribute("title") || "").replace(/\s*Business Page\s*$/i,"").trim(); if (t) it.name = t; }
+    });
+    return out;
+  }
+
+  if (type === "merkato") {
+    doc.querySelectorAll("a[href]").forEach(el => {
+      let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+      href = href.replace(/[?#].*$/, "");
+      const m = href.match(/\/directory\/(\d+-[^/?#]+)\/?$/i);
+      if (!m) return;
+      // Skip utility links
+      if (/advsearch|add-listing|rss|page:/i.test(href)) return;
+      let it = map.get(href);
+      if (!it) { it = {url: href, name: "", type: "merkato"}; map.set(href, it); out.push(it); }
+      const text = el.textContent.replace(/\s+/g," ").trim();
+      if (!it.name && text && text.length > 2 && !/details|view|more/i.test(text)) it.name = text;
+    });
+    return out;
+  }
+
+  if (type === "ezega") {
+    // Collect email links map: mail.aspx?Email=...&Bus=...
+    const emailMap = new Map();
+    doc.querySelectorAll('a[href*="mail.aspx"]').forEach(a => {
+      try {
+        const u = new URL(a.getAttribute("href") || "", base);
+        const em = u.searchParams.get("Email");
+        const b = u.searchParams.get("Bus");
+        if (em && b) emailMap.set(b.toLowerCase().trim(), em.trim());
+      } catch(_) {}
+    });
+
+    doc.querySelectorAll('a[href*="action=BussinessDetail"], a[href*="bid="]').forEach(el => {
+      let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+      if (!/action=BussinessDetail|bid=\d+/i.test(href)) return;
+      let it = map.get(href);
+      if (!it) { it = {url: href, name: "", type: "ezega"}; map.set(href, it); out.push(it); }
+      const text = el.textContent.replace(/\s+/g," ").trim();
+      if (!it.name && text && !/^\d+$/.test(text) && !/contact business|details/i.test(text)) {
+        it.name = text;
+      }
+      if (it.name && emailMap.has(it.name.toLowerCase())) {
+        it.prefilledEmail = emailMap.get(it.name.toLowerCase());
+      }
+    });
+    return out;
+  }
+
+  if (type === "ebd") {
+    doc.querySelectorAll("a[href]").forEach(el => {
+      let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+      href = href.replace(/[?#].*$/, "");
+      if (!/\/\d+\/[a-z0-9-]+/i.test(href) || href.includes('/category/') || href.includes('/home') || href.includes('360ground')) return;
+      let it = map.get(href);
+      if (!it) { it = {url: href, name: "", type: "ebd"}; map.set(href, it); out.push(it); }
+      const text = el.textContent.replace(/\s+/g," ").trim();
+      if (!it.name && text && text.length > 2) it.name = text;
+    });
+    return out;
+  }
+
   return out;
 }
 
+/* ---------- Category Crawler for All Platforms ---------- */
 async function crawlList(catInfo, already){
   const baseUrl = catInfo.url;
+  const type = catInfo.type;
   const found = [], seen = new Set();
-  for (let p = 1; p <= 150; p++){
+  const maxPages = type === "ebd" ? 1 : 100;
+
+  for (let p = 1; p <= maxPages; p++){
     if (stopFlag) break;
     let pageUrl = baseUrl;
+
     try {
-      const u = new URL(baseUrl);
-      if (p > 1) u.searchParams.set("page", p);
-      else u.searchParams.delete("page");
-      pageUrl = u.toString();
+      if (type === "addisbiz") {
+        const u = new URL(baseUrl);
+        if (p > 1) u.searchParams.set("page", p);
+        else u.searchParams.delete("page");
+        pageUrl = u.toString();
+      } else if (type === "merkato") {
+        if (p > 1) {
+          const clean = baseUrl.replace(/\/page:\d+/i, '').replace(/\/+$/, '');
+          pageUrl = `${clean}/page:${p}`;
+        }
+      } else if (type === "ezega") {
+        const u = new URL(baseUrl);
+        if (p > 1) u.searchParams.set("page", p - 1); // Ezega page is 0-indexed
+        pageUrl = u.toString();
+      }
     } catch (_) {}
 
     let html;
     try{ html = await getHtml(pageUrl); }
     catch(e){
-      log("Page " + p + " failed → " + e.message, "err");
-      if (p === 1) problem = "Couldn't reach AddisBiz. Try again or change Connection.";
+      log(`[${getDirectoryDisplayName(type)}] Page ${p} failed → ${e.message}`, "err");
+      if (p === 1) problem = `Couldn't reach ${getDirectoryDisplayName(type)}. Try again or switch proxy.`;
       break;
     }
+
     const doc = parse(html);
-    const list = extractListings(doc, pageUrl).filter(x => !seen.has(x.url));
+
+    // Dynamic title discovery from page if generic
+    if (catInfo.title.includes("Category") || catInfo.title.includes("Directory")) {
+      const h1Text = doc.querySelector("h1, h2, title")?.textContent.replace(/\s+/g, ' ').trim();
+      if (h1Text && h1Text.length > 3 && h1Text.length < 80) {
+        catInfo.title = h1Text.replace(/\s*-\s*AddisBiz.*$/i, '').replace(/\s*-\s*Ezega.*$/i, '').trim();
+      }
+    }
+
+    const list = extractListings(doc, pageUrl, type).filter(x => !seen.has(x.url));
+
+    // Handle Ezega parent categories with subcategories
+    if (type === "ezega" && !list.length && p === 1) {
+      const subcats = [];
+      doc.querySelectorAll('a[href*="action=Business"][href*="cid="]').forEach(subA => {
+        try {
+          const subUrl = new URL(subA.getAttribute("href") || "", pageUrl).href;
+          const subTitle = subA.textContent.replace(/\(\s*\d+\s*\)/g, '').trim();
+          if (subTitle && !seen.has(subUrl)) {
+            seen.add(subUrl);
+            subcats.push({ url: subUrl, title: `Ezega - ${subTitle}`, type: "ezega" });
+          }
+        } catch(_) {}
+      });
+
+      if (subcats.length) {
+        log(`Discovered ${subcats.length} Ezega subcategories. Crawling subcategories…`, "ok");
+        for (const sub of subcats.slice(0, 15)) {
+          if (stopFlag) break;
+          const subFound = await crawlList(sub, already + found.length);
+          subFound.forEach(x => { if (!seen.has(x.url)) { seen.add(x.url); found.push(x); } });
+        }
+        return found;
+      }
+    }
+
     if (!list.length){
       if (p === 1){
-        problem = "No companies found in this category.";
-        log("Page 1 loaded (" + Math.round(html.length/1024) + " KB) but no company links matched.", "warn");
+        problem = `No companies found in this ${getDirectoryDisplayName(type)} link.`;
+        log(`Page 1 loaded but no listings matched pattern.`, "warn");
       }
       break;
     }
+
     list.forEach(x => { 
       seen.add(x.url); 
       x.list = baseUrl; 
       x.categoryTitle = catInfo.title;
       found.push(x); 
     });
-    log("Page " + p + ": " + list.length + " companies (total " + found.length + ")");
+
+    log(`[${getDirectoryDisplayName(type)}] Page ${p}: ${list.length} companies (total ${found.length})`);
     setOrb({big: String(already + found.length), small: "Scanning", scanning: true});
     $("#meta").textContent = (already + found.length) + " found";
     await sleep(+$("#delay").value || 0);
@@ -439,43 +652,107 @@ async function crawlList(catInfo, already){
   return found;
 }
 
-/* ---------- detail page ---------- */
-function parseDetail(html, url){
+/* ---------- Detail Page Parsers ---------- */
+function parseDetail(html, url, it){
+  const type = it.type || identifyDirectory(url) || "addisbiz";
   const doc = parse(html), rec = {};
-  rec["Company"] = (doc.querySelector("h1")?.textContent || "").replace(/\s+/g," ").trim();
-  doc.querySelectorAll("table tr").forEach(tr => {
-    const c = tr.querySelectorAll("th,td");
-    if (c.length < 2) return;
-    const k = c[0].textContent.replace(/[:\s]+$/,"").replace(/\s+/g," ").trim();
-    const v = c[1].textContent.replace(/\s+/g," ").trim();
-    if (!k || !v) return;
-    rec[k] = rec[k] ? rec[k] + "; " + v : v;
-  });
+
+  rec["Directory"] = getDirectoryDisplayName(type);
+  rec["Directory Page"] = url;
   const phones = new Set();
+
+  if (type === "addisbiz") {
+    rec["Company"] = (doc.querySelector("h1")?.textContent || "").replace(/\s+/g," ").trim();
+    doc.querySelectorAll("table tr").forEach(tr => {
+      const c = tr.querySelectorAll("th,td");
+      if (c.length < 2) return;
+      const k = c[0].textContent.replace(/[:\s]+$/,"").replace(/\s+/g," ").trim();
+      const v = c[1].textContent.replace(/\s+/g," ").trim();
+      if (!k || !v) return;
+      rec[k] = rec[k] ? rec[k] + "; " + v : v;
+    });
+
+    const marker = [...doc.querySelectorAll("strong,b")].find(e => /listed in the following/i.test(e.textContent));
+    if (marker){
+      const ol = [...doc.querySelectorAll("ol")].find(o => marker.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if (ol){
+        rec["Categories"] = [...ol.querySelectorAll("li")].map(li =>
+          [...li.querySelectorAll("a")].map(a => a.textContent.replace(/\s+/g," ").trim()).filter(Boolean).join(" > ")
+        ).filter(Boolean).join("; ");
+      }
+    }
+  } else if (type === "merkato") {
+    const titleEl = doc.querySelector(".span12 h2") || doc.querySelector("h2");
+    rec["Company"] = (titleEl?.textContent || it.name || "").replace(/\s+/g, " ").trim();
+
+    doc.querySelectorAll("table tr").forEach(tr => {
+      const tds = tr.querySelectorAll("th,td");
+      if (tds.length >= 2) {
+        const k = tds[0].textContent.replace(/[:\s]+$/, "").trim();
+        const v = tds[1].textContent.replace(/\s+/g, " ").trim();
+        if (k && v) rec[k] = rec[k] ? rec[k] + "; " + v : v;
+      }
+    });
+
+    const webLink = [...doc.querySelectorAll("a")].find(a => /visit website/i.test(a.textContent));
+    if (webLink && webLink.getAttribute("href")) {
+      rec["Website"] = webLink.getAttribute("href").trim();
+    }
+  } else if (type === "ezega") {
+    const rawTitle = (doc.querySelector("title")?.textContent || it.name || "").replace(/\s+/g, " ").trim();
+    rec["Company"] = rawTitle.split("-")[0].trim();
+
+    const phMatch = html.match(/<i class=['"]fa fa-phone['"]><\/i>\s*([^<]+)/i);
+    if (phMatch) rec["Telephone"] = phMatch[1].trim();
+
+    const locMatch = html.match(/<i class=['"]fa fa-map-marker['"]><\/i>\s*([^<]+)/i);
+    if (locMatch) rec["Location"] = locMatch[1].trim();
+
+    const faxMatch = html.match(/<b>Fax:<\/b>\s*([^<]+)/i);
+    if (faxMatch) rec["Fax"] = faxMatch[1].trim();
+
+    if (it.prefilledEmail) rec["Email"] = it.prefilledEmail;
+  } else if (type === "ebd") {
+    rec["Company"] = (doc.querySelector("h1")?.textContent || it.name || "").replace(/\s+/g, " ").trim();
+
+    doc.querySelectorAll(".elementor-icon-box-content").forEach(box => {
+      const title = box.querySelector(".elementor-icon-box-title")?.textContent.trim() || "";
+      const desc = box.querySelector(".elementor-icon-box-description")?.textContent.replace(/\s+/g, " ").trim() || "";
+      if (/location/i.test(title)) rec["Location"] = desc.replace(/^Head Office\s*-\s*/i, '');
+      if (/contact/i.test(title)) rec["Telephone"] = desc.replace(/^Company Phone\s*-\s*/i, '');
+    });
+  }
+
+  // Universal phone harvester across tel: links, tables, and meta tags
   doc.querySelectorAll('a[href^="tel:"]').forEach(a => {
-    const n = a.getAttribute("href").replace(/^tel:/,"").replace(/[^\d+]/g,""); if (n) phones.add(n);
+    const n = a.getAttribute("href").replace(/^tel:/,"").replace(/[^\d+]/g,"");
+    if (n && n.length >= 7) phones.add(n);
   });
+
   Object.entries(rec).forEach(([k,v]) => {
-    if (/mobile|tele|phone|fax/i.test(k)) (v.match(/\+?\d[\d\s-]{7,}\d/g) || []).forEach(n => phones.add(n.replace(/[\s-]/g,"")));
+    if (/mobile|tele|phone|fax/i.test(k)) {
+      (v.match(/\+?\d[\d\s-]{6,}\d/g) || []).forEach(n => {
+        const clean = n.replace(/[\s-]/g,"");
+        if (clean.length >= 8) phones.add(clean);
+      });
+    }
   });
-  const meta = doc.querySelector('meta[name="description"]')?.getAttribute("content") || "";
-  (meta.match(/\+251\d{9}/g) || []).forEach(n => phones.add(n));
+
+  const metaContent = (doc.querySelector('meta[name="description"]')?.getAttribute("content") || "") + " " +
+                      (doc.querySelector('meta[property="og:description"]')?.getAttribute("content") || "");
+  (metaContent.match(/(?:\+251|09|011)\d{7,10}/g) || []).forEach(n => phones.add(n));
   rec["All Phones"] = [...phones].join("; ");
 
-  const marker = [...doc.querySelectorAll("strong,b")].find(e => /listed in the following/i.test(e.textContent));
-  if (marker){
-    const ol = [...doc.querySelectorAll("ol")].find(o => marker.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING);
-    if (ol){
-      rec["Categories"] = [...ol.querySelectorAll("li")].map(li =>
-        [...li.querySelectorAll("a")].map(a => a.textContent.replace(/\s+/g," ").trim()).filter(Boolean).join(" > ")
-      ).filter(Boolean).join("; ");
-    }
+  // Universal mailto harvester
+  if (!rec["Email"]) {
+    const mailLink = doc.querySelector('a[href^="mailto:"]');
+    if (mailLink) rec["Email"] = mailLink.getAttribute("href").replace(/^mailto:/i, '').split('?')[0].trim();
   }
-  rec["AddisBiz Page"] = url;
+
   return rec;
 }
 
-/* ---------- table / output ---------- */
+/* ---------- Table & Output Rendering ---------- */
 function columns(rows){
   const set = new Set(); rows.forEach(r => Object.keys(r).forEach(k => set.add(k)));
   const pref = PREFERRED.filter(k => set.has(k));
@@ -498,7 +775,7 @@ function render(){
     const n = document.createElement("td"); n.textContent = i + 1; n.style.color = "var(--muted)"; tr.appendChild(n);
     cols.forEach(c => {
       const td = document.createElement("td"); td.textContent = r[c] ?? "";
-      if (c === "Categories") td.className = "wrap";
+      if (c === "Categories" || c === "Location" || c === "Address") td.className = "wrap";
       if (c === "Status" && String(r[c]).startsWith("Failed")) td.className = "bad";
       tr.appendChild(td);
     });
@@ -513,10 +790,10 @@ function updateButtons(){
   const rt = $("#retry"); rt.hidden = running || nf === 0; rt.textContent = "Retry " + nf;
 }
 
-/* ---------- multi-tab professional excel ---------- */
+/* ---------- Multi-Tab Professional Excel Export ---------- */
 function sanitizeSheetName(name, existingNames) {
-  let clean = (name || "Category").replace(/[\\/?*\[\]:]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (!clean) clean = "Category";
+  let clean = (name || "Directory").replace(/[\\/?*\[\]:]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean) clean = "Directory";
   if (clean.length > 27) clean = clean.substring(0, 27).trim();
   let candidate = clean;
   let counter = 2;
@@ -562,7 +839,7 @@ const fileStamp = () => new Date().toISOString().slice(0,10);
 $("#dlx").onclick = () => {
   const rows = allRows();
   if (!rows.length) return;
-  if (typeof XLSX === "undefined"){ alert("Excel library didn't load (offline?). Saving CSV instead."); return $("#dlc").click(); }
+  if (typeof XLSX === "undefined"){ alert("Excel library not loaded. Saving CSV instead."); return $("#dlc").click(); }
   
   const wb = XLSX.utils.book_new();
   const existingNames = new Set();
@@ -575,7 +852,7 @@ $("#dlx").onclick = () => {
   // 2. Individual Category Tabs
   const grouped = new Map();
   rows.forEach(r => {
-    const cat = r["Source Category"] || "Category";
+    const cat = r["Source Category"] || r["Directory"] || "Directory";
     if (!grouped.has(cat)) grouped.set(cat, []);
     grouped.get(cat).push(r);
   });
@@ -587,7 +864,7 @@ $("#dlx").onclick = () => {
     XLSX.utils.book_append_sheet(wb, catWs, sheetName);
   });
 
-  XLSX.writeFile(wb, `addisbiz_${fileStamp()}.xlsx`);
+  XLSX.writeFile(wb, `ethiopian_business_directory_${fileStamp()}.xlsx`);
   log("Downloaded Excel with " + wb.SheetNames.length + " sheet tabs.", "ok");
 };
 
@@ -597,10 +874,10 @@ $("#dlc").onclick = () => {
   const csv = "\ufeff" + [cols.map(esc).join(","), ...rows.map(r => cols.map(c => esc(r[c])).join(","))].join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
-  a.download = "addisbiz_" + fileStamp() + ".csv"; a.click();
+  a.download = "ethiopian_business_directory_" + fileStamp() + ".csv"; a.click();
 };
 
-/* ---------- run ---------- */
+/* ---------- Execution Workflow ---------- */
 async function fetchDetails(list){
   let done = 0; const total = list.length, queue = list.slice();
   const par = Math.max(1, Math.min(8, +$("#par").value || 3));
@@ -610,28 +887,30 @@ async function fetchDetails(list){
     $("#meta").textContent = done + " of " + total;
   };
   progress();
+
   async function worker(){
     while (queue.length && !stopFlag){
       const it = queue.shift();
       try{
         const html = await getHtml(it.url);
-        const rec = parseDetail(html, it.url);
+        const rec = parseDetail(html, it.url, it);
         if (!rec.Company) rec.Company = it.name;
         rec["Source Category"] = it.categoryTitle || "";
         rec["Source List"] = it.list; 
         rec["Status"] = "OK";
         rowsByUrl.set(it.url, rec);
-        log("✓ " + (rec.Company || it.url) + (rec["All Phones"] ? "  " + rec["All Phones"] : ""), "ok");
+        log(`✓ [${rec.Directory}] ${rec.Company || it.url} ${rec["All Phones"] ? " — " + rec["All Phones"] : ""}`, "ok");
       }catch(e){
         if (stopFlag) break;
         rowsByUrl.set(it.url, {
           Company: it.name, 
+          Directory: getDirectoryDisplayName(it.type),
           "Source Category": it.categoryTitle || "",
           "Source List": it.list, 
-          "AddisBiz Page": it.url, 
+          "Directory Page": it.url, 
           Status: "Failed: " + e.message
         });
-        log("✗ " + (it.name || it.url) + " — " + e.message, "err");
+        log(`✗ [${getDirectoryDisplayName(it.type)}] ${it.name || it.url} — ${e.message}`, "err");
       }
       done++; progress();
       if (done % 6 === 0 || done === total) render();
@@ -681,15 +960,15 @@ async function start(){
       if (cat.isCompany){
         if (!seen.has(cat.url)){ 
           seen.add(cat.url); 
-          items.push({url: cat.url, name: "", list: "(direct link)", categoryTitle: "Direct Company"}); 
+          items.push({url: cat.url, name: "", list: "(direct link)", categoryTitle: "Direct Company", type: cat.type}); 
         } 
         continue; 
       }
-      log("Listing " + cat.title);
+      log(`Crawling [${getDirectoryDisplayName(cat.type)}] ${cat.title}`);
       const found = await crawlList(cat, items.length);
       found.forEach(f => { if (!seen.has(f.url)){ seen.add(f.url); items.push(f); } });
     }
-    log("Found " + items.length + " companies");
+    log(`Discovered ${items.length} total company listings`);
     if (items.length && !stopFlag){ target = 0; cur = 0; indet = false; await fetchDetails(items); }
   }catch(e){ log("Error: " + e.message, "err"); }
   finish();
