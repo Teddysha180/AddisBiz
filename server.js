@@ -23,12 +23,6 @@ const CHROME_HEADERS = {
   'Upgrade-Insecure-Requests': '1'
 };
 
-const BOT_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9'
-};
-
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -49,7 +43,7 @@ const server = http.createServer(async (req, res) => {
       status: 'ok',
       server: 'Ethiopian Business Directories Extractor',
       supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
-      version: '2.2.0',
+      version: '2.3.0',
       environment: process.env.NODE_ENV || 'production',
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -58,7 +52,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Built-in CORS Proxy endpoint
+  // Built-in CORS Proxy endpoint with Cloudflare resilience
   if (parsedUrl.pathname === '/api/proxy') {
     let targetUrl = parsedUrl.query.url;
     if (!targetUrl) {
@@ -71,31 +65,44 @@ const server = http.createServer(async (req, res) => {
       targetUrl = targetUrl.replace(/^https?:\/\/ethiopiabusinessdirectory\.com/i, 'https://www.ethiopiabusinessdirectory.com');
     }
 
-    // For Ezega, use Googlebot headers to seamlessly pass Cloudflare verification
+    // For Ezega, route through high-reliability reader proxy with HTML format to bypass Cloudflare
     const isEzega = /ezega\.com/i.test(targetUrl);
-    const primaryHeaders = isEzega ? BOT_HEADERS : CHROME_HEADERS;
+    let fetchUrl = targetUrl;
+    let fetchHeaders = CHROME_HEADERS;
+
+    if (isEzega) {
+      fetchUrl = `https://r.jina.ai/${targetUrl}`;
+      fetchHeaders = {
+        'Accept': 'text/html,application/xhtml+xml',
+        'X-Return-Format': 'html',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      };
+    }
 
     try {
-      let response = await fetch(targetUrl, {
-        headers: primaryHeaders,
+      let response = await fetch(fetchUrl, {
+        headers: fetchHeaders,
         redirect: 'follow',
         signal: AbortSignal.timeout(30000)
       });
 
       let body = await response.text();
 
-      // If challenged by Cloudflare, retry with alternative bot profile
-      if ((response.status === 403 || response.status === 503 || body.includes('Just a moment...'))) {
+      // If direct request for other sites was challenged by Cloudflare or blocked, retry with reader proxy
+      if ((response.status === 403 || response.status === 503 || body.includes('Just a moment...')) && !fetchUrl.includes('r.jina.ai')) {
         try {
-          const retryRes = await fetch(targetUrl, {
-            headers: BOT_HEADERS,
-            redirect: 'follow',
+          const fbResponse = await fetch(`https://r.jina.ai/${targetUrl}`, {
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml',
+              'X-Return-Format': 'html',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            },
             signal: AbortSignal.timeout(25000)
           });
-          const retryBody = await retryRes.text();
-          if (retryRes.ok && !retryBody.includes('Just a moment...')) {
-            response = retryRes;
-            body = retryBody;
+          const fbBody = await fbResponse.text();
+          if (fbResponse.ok && fbBody.length > 500 && !fbBody.includes('Just a moment...')) {
+            response = fbResponse;
+            body = fbBody;
           }
         } catch (_) {}
       }

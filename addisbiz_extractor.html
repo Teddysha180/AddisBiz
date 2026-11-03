@@ -633,9 +633,9 @@ async function crawlList(catInfo, already){
     const list = extractListings(doc, pageUrl, type).filter(x => !seen.has(x.url));
 
     // Handle parent categories with subcategories
-    if (!list.length && p === 1) {
+    if (p === 1) {
       const subcats = [];
-      if (type === "merkato") {
+      if (type === "merkato" && !list.length) {
         doc.querySelectorAll('a[href*="/directory/"]').forEach(a => {
           let href; try{ href = new URL(a.getAttribute("href") || "", pageUrl).href; }catch{ return; }
           href = href.replace(/[?#].*$/, "");
@@ -648,12 +648,12 @@ async function crawlList(catInfo, already){
             }
           }
         });
-      } else if (type === "ezega") {
-        doc.querySelectorAll('a[href*="action=Business"][href*="cid="]').forEach(subA => {
+      } else if (type === "ezega" && (!list.length || (catInfo.url.includes("category=") && !catInfo.url.includes("cid=")))) {
+        doc.querySelectorAll('a[href*="action=Business"][href*="cid="], a[href*="cid="]').forEach(subA => {
           try {
             const subUrl = new URL(subA.getAttribute("href") || "", pageUrl).href;
             const subTitle = subA.textContent.replace(/\(\s*\d+\s*\)/g, '').trim();
-            if (subTitle && !seen.has(subUrl)) {
+            if (subTitle && !seen.has(subUrl) && subUrl.includes("cid=")) {
               seen.add(subUrl);
               subcats.push({ url: subUrl, title: `Ezega - ${subTitle}`, type: "ezega" });
             }
@@ -663,17 +663,17 @@ async function crawlList(catInfo, already){
 
       if (subcats.length) {
         log(`Discovered ${subcats.length} subcategories. Crawling subcategories…`, "ok");
-        for (const sub of subcats.slice(0, 25)) {
+        for (const sub of subcats.slice(0, 30)) {
           if (stopFlag) break;
           const subFound = await crawlList(sub, already + found.length);
           subFound.forEach(x => { if (!seen.has(x.url)) { seen.add(x.url); found.push(x); } });
         }
-        return found;
+        if (!list.length) return found;
+      } else if (!list.length) {
+        problem = `No companies found in this ${getDirectoryDisplayName(type)} link.`;
+        log(`Page 1 loaded but no listings matched pattern.`, "warn");
+        break;
       }
-
-      problem = `No companies found in this ${getDirectoryDisplayName(type)} link.`;
-      log(`Page 1 loaded but no listings matched pattern.`, "warn");
-      break;
     }
 
     if (!list.length) break;
