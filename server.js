@@ -9,6 +9,20 @@ const url = require('url');
 const PORT = process.env.PORT || 3000;
 const HTML_FILE = path.join(__dirname, 'addisbiz_extractor.html');
 
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1'
+};
+
 const server = http.createServer(async (req, res) => {
   // Enable CORS for all requests
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,7 +44,7 @@ const server = http.createServer(async (req, res) => {
       status: 'ok',
       server: 'Ethiopian Business Directories Extractor',
       supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
-      version: '2.0.0',
+      version: '2.1.0',
       environment: process.env.NODE_ENV || 'production',
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -39,7 +53,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Built-in CORS Proxy endpoint
+  // Built-in CORS Proxy endpoint with Cloudflare resilience
   if (parsedUrl.pathname === '/api/proxy') {
     let targetUrl = parsedUrl.query.url;
     if (!targetUrl) {
@@ -54,23 +68,51 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const response = await fetch(targetUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9'
-        },
+      let response = await fetch(targetUrl, {
+        headers: BROWSER_HEADERS,
         redirect: 'follow',
-        signal: AbortSignal.timeout(35000)
+        signal: AbortSignal.timeout(30000)
       });
 
-      const body = await response.text();
+      let body = await response.text();
+
+      // If direct request is challenged by Cloudflare or blocked, fallback to resilient bridge
+      if ((response.status === 403 || response.status === 503 || body.includes('Just a moment...')) && !targetUrl.includes('corsproxy.org')) {
+        try {
+          const fallbackUrl = `https://corsproxy.org/?${encodeURIComponent(targetUrl)}`;
+          const fbResponse = await fetch(fallbackUrl, {
+            headers: BROWSER_HEADERS,
+            signal: AbortSignal.timeout(25000)
+          });
+          const fbBody = await fbResponse.text();
+          if (fbResponse.ok && fbBody.length > 500 && !fbBody.includes('Just a moment...')) {
+            response = fbResponse;
+            body = fbBody;
+          }
+        } catch (_) {}
+      }
+
       res.writeHead(response.status, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache'
       });
       res.end(body);
     } catch (err) {
+      // Secondary fallback on error
+      try {
+        const fallbackUrl = `https://corsproxy.org/?${encodeURIComponent(targetUrl)}`;
+        const fbResponse = await fetch(fallbackUrl, {
+          headers: BROWSER_HEADERS,
+          signal: AbortSignal.timeout(20000)
+        });
+        const fbBody = await fbResponse.text();
+        if (fbResponse.ok) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(fbBody);
+          return;
+        }
+      } catch (_) {}
+
       res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Proxy Error: ' + err.message);
     }
