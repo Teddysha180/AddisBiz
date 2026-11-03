@@ -41,7 +41,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
-      server: 'Ethiopian Business Directories Extractor',
+      server: 'Addisbiz',
       supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
       version: '2.3.0',
       environment: process.env.NODE_ENV || 'production',
@@ -151,7 +151,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n=================================================`);
-  console.log(`  Ethiopian Business Directories Extractor running!`);
+  console.log(`  Addisbiz running!`);
   console.log(`  Supported: AddisBiz, EthiopiaBusinessDirectory, Ezega, 2merkato`);
   console.log(`  Open in browser: http://localhost:${PORT}`);
   console.log(`  Local proxy:    http://localhost:${PORT}/api/proxy?url=...`);

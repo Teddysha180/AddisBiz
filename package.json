@@ -1,7 +1,7 @@
 {
-  "name": "ethiopian-business-directories-extractor",
+  "name": "addisbiz",
   "version": "2.0.0",
-  "description": "AddisBiz, EthiopiaBusinessDirectory, Ezega & 2merkato Business Directory Extractor with Multi-Tab Excel Export",
+  "description": "Addisbiz - Ethiopian Business Directory Extractor with Multi-Tab Excel Export",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
