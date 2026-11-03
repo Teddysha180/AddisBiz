@@ -6,6 +6,8 @@
 <title>Addisbiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Modern Executive ExcelJS Styling Engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
@@ -49,7 +51,7 @@
     }
   }
 
-  /* Apple Pro Custom Scrollbars (Eliminating Windows Default White Scrollbars) */
+  /* Apple Pro Custom Scrollbars */
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -170,12 +172,12 @@
   }
   @keyframes titleIn { to { opacity: 1; filter: none; transform: none; } }
 
-  /* Minimal Directory Badges */
+  /* Minimal Directory Badges - No Dots */
   .badges {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 7px;
+    gap: 8px;
     margin-bottom: 26px;
     opacity: 0;
     animation: fadeUp 0.8s var(--ease) 0.15s forwards;
@@ -183,11 +185,10 @@
   .badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.01em;
-    padding: 4px 11px;
+    padding: 5px 14px;
     border-radius: 999px;
     background: var(--fill);
     color: var(--muted);
@@ -198,13 +199,6 @@
     color: var(--ink);
     border-color: var(--edge-highlight);
     background: var(--fill-hover);
-  }
-  .badge .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--blue);
-    box-shadow: 0 0 8px var(--blue);
   }
 
   .glass {
@@ -381,7 +375,7 @@
   body[data-state=done] .halo { animation-duration: 25s; opacity: 0.16; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Perfectly Seamless Liquid Orb (Zero Seam Cutoff Fix) */
+  /* Perfectly Seamless Liquid Orb */
   .orb {
     position: absolute;
     inset: 0;
@@ -397,7 +391,7 @@
     left: 0;
     right: 0;
     top: calc(100% - var(--lvl, 0) * 1%);
-    height: 250%; /* Deep vertical expansion prevents any horizontal seam cutoff */
+    height: 250%;
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 14' preserveAspectRatio='none'%3E%3Cpath d='M0 7Q40-1 80 7T160 7V14H0Z'/%3E%3C/svg%3E"), linear-gradient(#000, #000);
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 14' preserveAspectRatio='none'%3E%3Cpath d='M0 7Q40-1 80 7T160 7V14H0Z'/%3E%3C/svg%3E"), linear-gradient(#000, #000);
     -webkit-mask-size: 160px 14px, 100% calc(100% - 13px);
@@ -479,7 +473,7 @@
     letter-spacing: -0.01em;
   }
 
-  /* Results Card (Apple Pro Glass) */
+  /* Results Card */
   .results {
     width: 100%;
     border-radius: 24px;
@@ -537,25 +531,18 @@
   }
   .seg[data-tab=log] .thumb { transform: translateX(100%); }
 
-  /* Integrated Clean Count Tag */
+  /* Clean Count Tag - No Dot */
   .count-badge {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 5px 14px;
     border-radius: 99px;
     background: var(--fill);
     color: var(--ink);
     border: 1px solid var(--line);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-  }
-  .count-badge::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--ok);
+    letter-spacing: -0.01em;
   }
 
   /* Toolbar Filter Box */
@@ -624,7 +611,7 @@
   .panel.on { display: block; animation: fade 0.4s var(--ease); }
   @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
 
-  /* Apple Pro Table Wrap & Solid Sticky Header (Eliminating overlapping text) */
+  /* Apple Pro Table Wrap & Solid Sticky Header */
   .tablewrap {
     overflow: auto;
     max-height: 440px;
@@ -651,7 +638,6 @@
   th {
     position: sticky;
     top: 0;
-    /* High-opacity background so rows never bleed through when scrolling */
     background: #12141c;
     color: var(--muted);
     font-weight: 600;
@@ -730,11 +716,12 @@
 <main>
   <h1>Addisbiz</h1>
 
+  <!-- Clean Badges with No Dots -->
   <div class="badges">
-    <span class="badge"><span class="dot"></span>AddisBiz</span>
-    <span class="badge"><span class="dot"></span>2merkato</span>
-    <span class="badge"><span class="dot"></span>Ezega</span>
-    <span class="badge"><span class="dot"></span>EBD</span>
+    <span class="badge">AddisBiz</span>
+    <span class="badge">2merkato</span>
+    <span class="badge">Ezega</span>
+    <span class="badge">EBD</span>
   </div>
 
   <div class="bar glass" id="bar">
@@ -800,10 +787,8 @@ const PROXIES = {
 let goodProxy = "local";
 
 const PREFERRED = [
-  "#", "Company", "Directory", "Mobile", "Mobile 1", "Mobile 2",
-  "Telephone 1", "Telephone 2", "Telephone", "All Phones", "Fax",
-  "Email", "Website", "Location", "City", "Address", "Number of Employees",
-  "Categories", "Primary Category", "Source Category", "Source List",
+  "#", "Company", "Directory", "Telephone", "Mobile", "Email",
+  "Location", "City", "Address", "Website", "Categories", "Source Category",
   "Directory Page", "Status"
 ];
 
@@ -1278,15 +1263,21 @@ async function crawlList(catInfo, already){
   return found;
 }
 
-/* ---------- Detail Page Parsers ---------- */
+/* ---------- Detail Page Parsers (Strict Clean Harvester) ---------- */
 function parseDetail(html, url, it){
   const type = it.type || identifyDirectory(url) || "addisbiz";
   const doc = parse(html), rec = {};
 
   rec["Directory"] = getDirectoryDisplayName(type);
   rec["Directory Page"] = url;
-  const phones = new Set();
-  const blacklistPhones = ['251901313131', '251930105437', '0901313131', '0930105437'];
+
+  // Global Blacklist for Footers, Helpdesks, and Site-wide generic numbers
+  const blacklistPhones = [
+    '251901313131', '251930105437', '0901313131', '0930105437', // AddisBiz ads
+    '251912706091', '251115519032', '251116450361', '251116610339', '251116176570', // Ezega footer
+    '0912706091', '0115519032', '0116450361', '0116610339', '0116176570',
+    '251115519032', '251116610339'
+  ];
 
   if (type === "addisbiz") {
     rec["Company"] = (doc.querySelector("h1")?.textContent || "").replace(/\s+/g," ").trim();
@@ -1356,36 +1347,27 @@ function parseDetail(html, url, it){
     });
   }
 
-  // Universal phone harvester
-  doc.querySelectorAll('a[href^="tel:"]').forEach(a => {
-    const n = a.getAttribute("href").replace(/^tel:/,"").replace(/[^\d+]/g,"");
-    if (n && n.length >= 8 && !blacklistPhones.includes(n.replace('+',''))) phones.add(n);
-  });
+  // Clean company-specific phones (scoped only to detail container, NEVER whole body)
+  const detailBox = doc.querySelector('.bussiness_detail, #ctl00_MainContent, .span12, #details, .listing-desc, .elementor-icon-box-content');
+  if (detailBox) {
+    detailBox.querySelectorAll('a[href^="tel:"]').forEach(a => {
+      const n = a.getAttribute("href").replace(/^tel:/,"").replace(/[^\d+]/g,"");
+      if (n && n.length >= 9 && !blacklistPhones.includes(n.replace('+',''))) {
+        if (!rec["Telephone"]) rec["Telephone"] = n;
+      }
+    });
+  }
 
-  // Extract from key-value records
-  Object.entries(rec).forEach(([k,v]) => {
-    if (/mobile|tele|phone|fax/i.test(k)) {
-      (v.match(/(?:\+251|09|011)[0-9\s-]{6,14}/g) || []).forEach(n => {
-        const clean = n.replace(/[\s-]/g,"");
-        if (clean.length >= 8 && !blacklistPhones.includes(clean.replace('+',''))) {
-          phones.add(clean.startsWith('0') ? '+251' + clean.slice(1) : (clean.startsWith('+') ? clean : '+' + clean));
-        }
-      });
+  // Filter out any blacklisted telephone numbers
+  if (rec["Telephone"]) {
+    const cleanPh = rec["Telephone"].replace(/[^\d]/g, '');
+    if (blacklistPhones.some(b => cleanPh.includes(b))) {
+      rec["Telephone"] = "";
     }
-  });
-
-  const contactText = doc.querySelector('.elementor-icon-box-description, .span12, #details, .table, body')?.textContent || "";
-  (contactText.match(/(?<!tin[\s\w:]*)(?:\+251|09|011)[0-9\s-]{6,14}/gi) || []).forEach(n => {
-    const clean = n.replace(/[\s-]/g, "").trim();
-    if (clean.length >= 8 && clean.length <= 14 && !blacklistPhones.includes(clean.replace('+',''))) {
-      phones.add(clean.startsWith('0') ? '+251' + clean.slice(1) : (clean.startsWith('+') ? clean : '+' + clean));
-    }
-  });
-
-  rec["All Phones"] = [...phones].join("; ");
+  }
 
   if (!rec["Email"]) {
-    const mailLink = doc.querySelector('a[href^="mailto:"]');
+    const mailLink = (detailBox || doc).querySelector('a[href^="mailto:"]');
     if (mailLink) {
       rec["Email"] = mailLink.getAttribute("href").replace(/^mailto:/i, '').split('?')[0].trim();
     }
@@ -1443,7 +1425,7 @@ function updateButtons(){
   const rt = $("#retry"); rt.hidden = running || nf === 0; rt.textContent = "Retry " + nf;
 }
 
-/* ---------- Multi-Tab Professional Excel Export ---------- */
+/* ---------- Executive Designed Excel & CSV Export ---------- */
 function sanitizeSheetName(name, existingNames) {
   let clean = (name || "Directory").replace(/[\\/?*\[\]:]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!clean) clean = "Directory";
@@ -1458,65 +1440,176 @@ function sanitizeSheetName(name, existingNames) {
   return candidate;
 }
 
-function createStyledSheet(rows, cols) {
-  const data = rows.map((r, i) => {
-    const item = { "#": i + 1 };
-    cols.forEach(c => { if (c !== "#") item[c] = r[c] ?? ""; });
-    return item;
-  });
-  const ws = XLSX.utils.json_to_sheet(data, { header: cols });
-  Object.keys(ws).forEach(cellKey => {
-    if (cellKey.startsWith("!")) return;
-    const cell = ws[cellKey];
-    if (cell && typeof cell.v === "string" && /^\+?\d{6,}$/.test(cell.v.trim())) {
-      cell.t = 's';
-    }
-  });
-  ws["!cols"] = cols.map(c => {
-    let maxLen = c.length;
-    const sample = data.slice(0, 200);
-    sample.forEach(row => {
-      const val = String(row[c] || "");
-      if (val.length > maxLen) maxLen = val.length;
-    });
-    return { wch: Math.min(60, Math.max(12, maxLen + 3)) };
-  });
-  ws["!freeze"] = { xSplit: "A", ySplit: "2" };
-  ws["!views"] = [{ state: "frozen", ySplit: 1 }];
-  ws["!autofilter"] = { ref: ws["!ref"] };
-  return ws;
-}
+const fileStamp = () => new Date().toISOString().slice(0, 10);
 
-const fileStamp = () => new Date().toISOString().slice(0,10);
-
-$("#dlx").onclick = () => {
+$("#dlx").onclick = async () => {
   const rows = allRows();
   if (!rows.length) return;
-  if (typeof XLSX === "undefined"){ alert("Excel library not loaded. Saving CSV instead."); return $("#dlc").click(); }
-  
-  const wb = XLSX.utils.book_new();
-  const existingNames = new Set();
-  const globalCols = columns(rows);
 
-  const masterWs = createStyledSheet(rows, globalCols);
-  XLSX.utils.book_append_sheet(wb, masterWs, sanitizeSheetName("All Companies", existingNames));
+  const btn = $("#dlx");
+  const oldHtml = btn.innerHTML;
+  btn.textContent = "Generating...";
+  btn.disabled = true;
 
-  const grouped = new Map();
-  rows.forEach(r => {
-    const cat = r["Source Category"] || r["Directory"] || "Directory";
-    if (!grouped.has(cat)) grouped.set(cat, []);
-    grouped.get(cat).push(r);
-  });
+  try {
+    if (typeof ExcelJS !== "undefined") {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Addisbiz";
+      wb.created = new Date();
 
-  grouped.forEach((catRows, catTitle) => {
-    const sheetName = sanitizeSheetName(catTitle, existingNames);
-    const catCols = columns(catRows);
-    const catWs = createStyledSheet(catRows, catCols);
-    XLSX.utils.book_append_sheet(wb, catWs, sheetName);
-  });
+      const addExecutiveSheet = (sheetName, dataRows) => {
+        const ws = wb.addWorksheet(sheetName, {
+          views: [{ showGridLines: true, state: "frozen", ySplit: 1 }]
+        });
 
-  XLSX.writeFile(wb, `addisbiz_${fileStamp()}.xlsx`);
-  log("Downloaded Excel with " + wb.SheetNames.length + " sheet tabs.", "ok");
+        const columnsDef = [
+          { header: "#", key: "idx", width: 6 },
+          { header: "Company Name", key: "company", width: 34 },
+          { header: "Directory", key: "directory", width: 16 },
+          { header: "Telephone", key: "phone", width: 24 },
+          { header: "Mobile", key: "mobile", width: 20 },
+          { header: "Email Address", key: "email", width: 28 },
+          { header: "City / Location", key: "location", width: 26 },
+          { header: "Address", key: "address", width: 32 },
+          { header: "Website", key: "website", width: 26 },
+          { header: "Category", key: "category", width: 28 },
+          { header: "Directory Page", key: "url", width: 22 }
+        ];
+
+        ws.columns = columnsDef;
+
+        // Executive Header Row
+        const headerRow = ws.getRow(1);
+        headerRow.height = 30;
+        headerRow.eachCell((cell, colNumber) => {
+          cell.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FFFFFFFF" } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF1E293B" } // Apple Midnight Slate
+          };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: colNumber === 1 || colNumber === 3 ? "center" : "left",
+            wrapText: false
+          };
+          cell.border = {
+            bottom: { style: "medium", color: { argb: "FF0A84FF" } } // Accent Apple Blue
+          };
+        });
+
+        // Professional Zebra Striped Data Rows
+        dataRows.forEach((r, idx) => {
+          const rowData = {
+            idx: idx + 1,
+            company: r["Company"] || "",
+            directory: r["Directory"] || "",
+            phone: r["Telephone"] || r["Telephone 1"] || r["Telephone 2"] || "",
+            mobile: r["Mobile"] || r["Mobile 1"] || r["Mobile 2"] || "",
+            email: r["Email"] || "",
+            location: r["Location"] || r["City"] || "",
+            address: r["Address"] || "",
+            website: r["Website"] || "",
+            category: r["Source Category"] || r["Categories"] || r["Primary Category"] || "",
+            url: r["Directory Page"] || ""
+          };
+
+          const row = ws.addRow(rowData);
+          row.height = 22;
+          const bg = idx % 2 === 0 ? "FFFFFFFF" : "FFF8FAFC";
+
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF1E293B" } };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: bg }
+            };
+            cell.border = {
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } }
+            };
+            cell.alignment = {
+              vertical: "middle",
+              horizontal: colNumber === 1 || colNumber === 3 ? "center" : "left"
+            };
+
+            // Format phone and numbers as clean text
+            if (colNumber === 4 || colNumber === 5) {
+              if (cell.value) cell.numFmt = "@";
+            }
+
+            // Clickable Email hyperlink
+            if (colNumber === 6 && cell.value && String(cell.value).includes("@")) {
+              const em = String(cell.value).trim();
+              cell.value = { text: em, hyperlink: `mailto:${em}` };
+              cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF0284C7" }, underline: true };
+            }
+
+            // Clickable Website hyperlink
+            if (colNumber === 9 && cell.value && String(cell.value).startsWith("http")) {
+              const u = String(cell.value).trim();
+              cell.value = { text: u, hyperlink: u };
+              cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF0284C7" }, underline: true };
+            }
+
+            // Clickable Source Listing hyperlink
+            if (colNumber === 11 && cell.value && String(cell.value).startsWith("http")) {
+              const u = String(cell.value).trim();
+              cell.value = { text: "Open Listing ↗", hyperlink: u };
+              cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF0284C7" }, underline: true };
+            }
+          });
+        });
+
+        ws.autoFilter = {
+          from: { row: 1, column: 1 },
+          to: { row: dataRows.length + 1, column: columnsDef.length }
+        };
+      };
+
+      // 1. Master Sheet
+      addExecutiveSheet("All Companies", rows);
+
+      // 2. Category sheets
+      const grouped = new Map();
+      rows.forEach(r => {
+        const cat = r["Source Category"] || r["Directory"] || "Directory";
+        if (!grouped.has(cat)) grouped.set(cat, []);
+        grouped.get(cat).push(r);
+      });
+
+      const existingNames = new Set(["all companies"]);
+      grouped.forEach((catRows, catTitle) => {
+        const sheetName = sanitizeSheetName(catTitle, existingNames);
+        addExecutiveSheet(sheetName, catRows);
+      });
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `addisbiz_${fileStamp()}.xlsx`;
+      a.click();
+      log(`Downloaded executive styled Excel workbook with ${wb.worksheets.length} sheets.`, "ok");
+      return;
+    }
+
+    // Fallback to SheetJS
+    if (typeof XLSX !== "undefined") {
+      const wb = XLSX.utils.book_new();
+      const existingNames = new Set();
+      const globalCols = columns(rows);
+      const masterWs = XLSX.utils.json_to_sheet(rows, { header: globalCols });
+      XLSX.utils.book_append_sheet(wb, masterWs, sanitizeSheetName("All Companies", existingNames));
+      XLSX.writeFile(wb, `addisbiz_${fileStamp()}.xlsx`);
+      log("Downloaded Excel with SheetJS.", "ok");
+    }
+  } catch (err) {
+    alert("Export failed: " + err.message);
+  } finally {
+    btn.innerHTML = oldHtml;
+    btn.disabled = false;
+  }
 };
 
 $("#dlc").onclick = () => {
@@ -1548,9 +1641,9 @@ async function fetchDetails(list){
         if (!rec.Company) rec.Company = it.name;
         rec["Source Category"] = it.categoryTitle || "";
         rec["Source List"] = it.list; 
-        rec["Status"] = rec["All Phones"] ? "OK" : "OK (No phone on record)";
+        rec["Status"] = rec["Telephone"] || rec["Mobile"] ? "OK" : "OK (No phone on record)";
         rowsByUrl.set(it.url, rec);
-        log(`✓ [${rec.Directory}] ${rec.Company || it.url} ${rec["All Phones"] ? " — " + rec["All Phones"] : ""}`, "ok");
+        log(`✓ [${rec.Directory}] ${rec.Company || it.url} ${rec["Telephone"] ? " — " + rec["Telephone"] : ""}`, "ok");
       }catch(e){
         if (stopFlag) break;
         rowsByUrl.set(it.url, {
