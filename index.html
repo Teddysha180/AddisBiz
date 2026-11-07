@@ -1267,6 +1267,18 @@ async function crawlList(catInfo, already){
             }
           } catch(_) {}
         });
+      } else if (type === "dnb" && !list.length && catInfo.url.match(/\.([a-z]{2})\.([a-z_]+)\.html/i)) {
+        const countryUrl = catInfo.url.replace(/\.([a-z]{2})\.[a-z_]+\.html/i, '.$1.html');
+        log(`[Dun & Bradstreet] City index returned 0 listings. Trying country level: ${countryUrl}…`, "warn");
+        try {
+          const fallbackHtml = await getHtml(countryUrl);
+          const fallbackDoc = parse(fallbackHtml);
+          const fallbackList = extractListings(fallbackDoc, countryUrl, type);
+          if (fallbackList.length) {
+            fallbackList.forEach(x => list.push(x));
+            catInfo.url = countryUrl;
+          }
+        } catch(_) {}
       }
 
       if (subcats.length) {
