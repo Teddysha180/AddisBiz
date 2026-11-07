@@ -1156,7 +1156,7 @@ function extractListings(doc, base, type){
 }
 
 /* ---------- Category Crawler with Auto-Next Pagination ---------- */
-function findNextPageUrl(doc, currentUrl, type) {
+function findNextPageUrl(doc, currentUrl, type, rawHtml = "") {
   const pag = doc.querySelector(".pagination, .pagination-list, .pages, nav, ul.pagination");
   const candidates = pag ? [...pag.querySelectorAll("a[href]")] : [...doc.querySelectorAll("a[href]")];
   
@@ -1209,6 +1209,30 @@ function findNextPageUrl(doc, currentUrl, type) {
     } catch (_) {}
   }
 
+  if (type === "dnb") {
+    try {
+      const u = new URL(currentUrl);
+      const curPage = parseInt(u.searchParams.get("page") || "1", 10);
+      const rawText = (rawHtml || "") + " " + (doc.body?.textContent || "");
+      
+      const pageLines = rawText.match(/(?:^|\n)\s*(\d+(?:\s+\d+)*)\s*(?:\n|$)/g) || [];
+      let maxPage = curPage;
+      for (const line of pageLines) {
+        const nums = line.trim().split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n > 0 && n <= 500);
+        if (nums.length >= 2 || (nums.length === 1 && nums[0] === curPage + 1)) {
+          for (const n of nums) {
+            if (n > maxPage) maxPage = n;
+          }
+        }
+      }
+
+      if (maxPage > curPage) {
+        u.searchParams.set("page", curPage + 1);
+        return u.toString();
+      }
+    } catch (_) {}
+  }
+
   return null;
 }
 
@@ -1216,7 +1240,7 @@ async function crawlList(catInfo, already){
   let pageUrl = catInfo.url;
   const type = catInfo.type;
   const found = [], seen = new Set(), seenPages = new Set([pageUrl]);
-  const maxPages = (type === "ebd" || type === "dnb") ? 1 : 150;
+  const maxPages = type === "ebd" ? 1 : 150;
 
   for (let p = 1; p <= maxPages; p++){
     if (stopFlag) break;
@@ -1230,7 +1254,7 @@ async function crawlList(catInfo, already){
       break;
     }
 
-    const doc = parse(html);
+    let doc = parse(html);
 
     if (catInfo.title.includes("Category") || catInfo.title.includes("Directory")) {
       const h1Text = doc.querySelector("h1, h2, title")?.textContent.replace(/\s+/g, ' ').trim();
@@ -1277,6 +1301,9 @@ async function crawlList(catInfo, already){
           if (fallbackList.length) {
             fallbackList.forEach(x => list.push(x));
             catInfo.url = countryUrl;
+            pageUrl = countryUrl;
+            doc = fallbackDoc;
+            html = fallbackHtml;
           }
         } catch(_) {}
       }
@@ -1309,9 +1336,9 @@ async function crawlList(catInfo, already){
     setOrb({big: String(already + found.length), small: "Scanning", scanning: true});
     $("#meta").textContent = (already + found.length) + " found";
 
-    if (type === "ebd" || type === "dnb") break;
+    if (type === "ebd") break;
 
-    const nextUrl = findNextPageUrl(doc, pageUrl, type);
+    const nextUrl = findNextPageUrl(doc, pageUrl, type, html);
     if (!nextUrl || nextUrl === pageUrl || seenPages.has(nextUrl)) {
       if (p > 1) log(`[${getDirectoryDisplayName(type)}] Completed all ${p} pages.`, "ok");
       break;

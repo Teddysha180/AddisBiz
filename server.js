@@ -75,7 +75,8 @@ const server = http.createServer(async (req, res) => {
       fetchUrl = `https://r.jina.ai/${targetUrl}`;
       fetchHeaders = {
         'Accept': 'text/plain, text/html, application/xhtml+xml',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'X-No-Cache': 'true'
       };
     }
 
