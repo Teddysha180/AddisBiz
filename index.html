@@ -722,6 +722,7 @@
     <span class="badge">2merkato</span>
     <span class="badge">Ezega</span>
     <span class="badge">EBD</span>
+    <span class="badge">D&B</span>
   </div>
 
   <div class="bar glass" id="bar">
@@ -788,8 +789,8 @@ let goodProxy = "local";
 
 const PREFERRED = [
   "#", "Company", "Directory", "Telephone", "Mobile", "Email",
-  "Location", "City", "Address", "Website", "Categories", "Source Category",
-  "Directory Page", "Status"
+  "Location", "City", "Address", "Website", "Principal", "Number of Employees",
+  "Categories", "Source Category", "Directory Page", "Status"
 ];
 
 let stopFlag = false, items = [], rowsByUrl = new Map(), running = false, problem = "";
@@ -855,6 +856,7 @@ function identifyDirectory(urlStr) {
     if (host.includes("2merkato.com")) return "merkato";
     if (host.includes("ezega.com")) return "ezega";
     if (host.includes("ethiopiabusinessdirectory.com")) return "ebd";
+    if (host.includes("dnb.com")) return "dnb";
   } catch (_) {}
   return null;
 }
@@ -865,6 +867,7 @@ function getDirectoryDisplayName(type) {
     case "merkato":  return "2merkato";
     case "ezega":    return "Ezega";
     case "ebd":      return "EthiopiaBusinessDirectory";
+    case "dnb":      return "Dun & Bradstreet";
     default:         return "Directory";
   }
 }
@@ -909,6 +912,22 @@ function generateCategoryTitle(urlStr, type) {
       const m = parsed.pathname.match(/\/category\/(\d+)/i);
       if (m) return `EBD Category ${m[1]}`;
       return "EBD Directory";
+    }
+
+    if (type === "dnb") {
+      const path = parsed.pathname;
+      const mInfo = path.match(/company-information\.([^.]+)(?:\.([^.]+))?(?:\.([^.]+))?\.html/i);
+      if (mInfo) {
+        const ind = mInfo[1].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const loc = [mInfo[3], mInfo[2]].filter(Boolean).map(s => s.replace(/_/g, ' ').toUpperCase()).join(', ');
+        return `D&B - ${ind}${loc ? ` (${loc})` : ''}`;
+      }
+      const mInd = path.match(/industry-analysis\.([^.]+)\.html/i);
+      if (mInd) {
+        const ind = mInd[1].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `D&B - ${ind}`;
+      }
+      return "Dun & Bradstreet Directory";
     }
   } catch (_) {}
   return "Category";
@@ -963,6 +982,11 @@ function parseInputCategories(text) {
         parsed.searchParams.delete('page');
         normalized = parsed.origin + parsed.pathname.replace(/\/+$/, '');
         isCompany = /\/\d+\/([a-z0-9-]+)\/?$/i.test(parsed.pathname) && !parsed.pathname.includes('/category/');
+      } else if (type === "dnb") {
+        parsed.hash = '';
+        parsed.search = '';
+        normalized = parsed.origin + parsed.pathname;
+        isCompany = /\/company-profiles\/[^\/]+$/i.test(parsed.pathname);
       }
 
       if (!seen.has(normalized)) {
@@ -1102,6 +1126,32 @@ function extractListings(doc, base, type){
     return out;
   }
 
+  if (type === "dnb") {
+    doc.querySelectorAll('a[href*="/company-profiles/"]').forEach(el => {
+      let href; try{ href = new URL(el.getAttribute("href") || "", base).href; }catch{ return; }
+      href = href.replace(/[?#].*$/, "");
+      if (!/\/company-profiles\/[a-z0-9_.-]+(?:\.html)?$/i.test(href)) return;
+      let it = map.get(href);
+      if (!it) { it = {url: href, name: "", type: "dnb"}; map.set(href, it); out.push(it); }
+      const text = el.textContent.replace(/\s+/g," ").trim();
+      if (!it.name && text && text.length > 1 && !/profile|view|more/i.test(text)) it.name = text;
+    });
+
+    const rawContent = doc.body?.textContent || "";
+    const mdRegex = /\[([^\]]+)\]\((https:\/\/www\.dnb\.com\/business-directory\/company-profiles\/[^\)\s]+)\)/gi;
+    let m;
+    while ((m = mdRegex.exec(rawContent)) !== null) {
+      const name = m[1].replace(/\\/g, '').trim();
+      const href = m[2].replace(/[?#].*$/, "");
+      if (!map.has(href)) {
+        const it = {url: href, name: name, type: "dnb"};
+        map.set(href, it);
+        out.push(it);
+      }
+    }
+    return out;
+  }
+
   return out;
 }
 
@@ -1166,7 +1216,7 @@ async function crawlList(catInfo, already){
   let pageUrl = catInfo.url;
   const type = catInfo.type;
   const found = [], seen = new Set(), seenPages = new Set([pageUrl]);
-  const maxPages = type === "ebd" ? 1 : 150;
+  const maxPages = (type === "ebd" || type === "dnb") ? 1 : 150;
 
   for (let p = 1; p <= maxPages; p++){
     if (stopFlag) break;
@@ -1247,7 +1297,7 @@ async function crawlList(catInfo, already){
     setOrb({big: String(already + found.length), small: "Scanning", scanning: true});
     $("#meta").textContent = (already + found.length) + " found";
 
-    if (type === "ebd") break;
+    if (type === "ebd" || type === "dnb") break;
 
     const nextUrl = findNextPageUrl(doc, pageUrl, type);
     if (!nextUrl || nextUrl === pageUrl || seenPages.has(nextUrl)) {
@@ -1345,6 +1395,63 @@ function parseDetail(html, url, it){
         rec["Telephone"] = desc.replace(/^Company Phone\s*-\s*/i, '').trim();
       }
     });
+  } else if (type === "dnb") {
+    const rawText = html;
+    // 1. Company Name
+    const h1Match = rawText.match(/(?:^|\n)#\s+([^\n\r#]+)/);
+    if (h1Match && !h1Match[1].includes("Business Directory")) {
+      rec["Company"] = h1Match[1].trim();
+    } else {
+      const docH1 = doc.querySelector("h1")?.textContent?.replace(/\s+/g, ' ').trim();
+      if (docH1 && !docH1.includes("Business Directory")) {
+        rec["Company"] = docH1;
+      } else {
+        const titleMatch = rawText.match(/Title:\s+([^|\n]+)/i);
+        if (titleMatch) rec["Company"] = titleMatch[1].replace(/\s*\|\s*D&B.*$/i, '').trim();
+      }
+    }
+    if (!rec["Company"] && it.name) rec["Company"] = it.name;
+
+    // 2. Address & Location
+    const addrMatch = rawText.match(/\*\*Address:\*\*\[?([^\(\]\n]+?)(?:!\[|\(https|\n|$)/i);
+    if (addrMatch) {
+      rec["Address"] = addrMatch[1].replace(/[!\[\]]/g, '').trim();
+      const parts = rec["Address"].split(',');
+      if (parts.length >= 2) {
+        rec["Location"] = parts[parts.length - 2].trim();
+      }
+    }
+
+    // 3. Phone
+    const phoneMatch = rawText.match(/\*\*Phone:\*\*([^\n\r]+)/i);
+    if (phoneMatch) {
+      rec["Telephone"] = phoneMatch[1].trim();
+    }
+
+    // 4. Website
+    const webMatch = rawText.match(/\*\*Website:\*\*\[?([^\(\]\n\r]+?)(?:!\[|\(https|\n|$)/i);
+    if (webMatch) {
+      let w = webMatch[1].replace(/[!\[\]]/g, '').trim();
+      rec["Website"] = w.startsWith('http') ? w : 'https://' + w;
+    }
+
+    // 5. Principal
+    const princMatch = rawText.match(/Key Principal:\s*([^\n\r\[]+)/i);
+    if (princMatch) {
+      rec["Principal"] = princMatch[1].trim();
+    }
+
+    // 6. Industry / Categories
+    const indMatch = rawText.match(/Industry:\s*(?:\n+)?(?:\[)?([^\]\n]+)/i);
+    if (indMatch) {
+      rec["Categories"] = indMatch[1].replace(/[\[\]]/g, '').trim();
+    }
+
+    // 7. Employees
+    const empMatch = rawText.match(/\*\*Employees[^:]*:\*\*([^\n\r!]+)/i);
+    if (empMatch) {
+      rec["Number of Employees"] = empMatch[1].trim();
+    }
   }
 
   // Clean company-specific phones (scoped only to detail container, NEVER whole body)
@@ -1469,8 +1576,10 @@ $("#dlx").onclick = async () => {
           { header: "Telephone", key: "phone", width: 24 },
           { header: "Mobile", key: "mobile", width: 20 },
           { header: "Email Address", key: "email", width: 28 },
+          { header: "Key Principal", key: "principal", width: 24 },
           { header: "City / Location", key: "location", width: 26 },
           { header: "Address", key: "address", width: 32 },
+          { header: "Employees", key: "employees", width: 18 },
           { header: "Website", key: "website", width: 26 },
           { header: "Category", key: "category", width: 28 },
           { header: "Directory Page", key: "url", width: 22 }
@@ -1507,8 +1616,10 @@ $("#dlx").onclick = async () => {
             phone: r["Telephone"] || r["Telephone 1"] || r["Telephone 2"] || "",
             mobile: r["Mobile"] || r["Mobile 1"] || r["Mobile 2"] || "",
             email: r["Email"] || "",
+            principal: r["Principal"] || r["Key Principal"] || "",
             location: r["Location"] || r["City"] || "",
             address: r["Address"] || "",
+            employees: r["Number of Employees"] || r["Employees"] || "",
             website: r["Website"] || "",
             category: r["Source Category"] || r["Categories"] || r["Primary Category"] || "",
             url: r["Directory Page"] || ""
@@ -1546,14 +1657,14 @@ $("#dlx").onclick = async () => {
             }
 
             // Clickable Website hyperlink
-            if (colNumber === 9 && cell.value && String(cell.value).startsWith("http")) {
+            if (colNumber === 11 && cell.value && String(cell.value).startsWith("http")) {
               const u = String(cell.value).trim();
               cell.value = { text: u, hyperlink: u };
               cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF0284C7" }, underline: true };
             }
 
             // Clickable Source Listing hyperlink
-            if (colNumber === 11 && cell.value && String(cell.value).startsWith("http")) {
+            if (colNumber === 13 && cell.value && String(cell.value).startsWith("http")) {
               const u = String(cell.value).trim();
               cell.value = { text: "Open Listing ↗", hyperlink: u };
               cell.font = { name: "Segoe UI", size: 9.5, color: { argb: "FF0284C7" }, underline: true };

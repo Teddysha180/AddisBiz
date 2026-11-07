@@ -42,8 +42,8 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({
       status: 'ok',
       server: 'Addisbiz',
-      supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com'],
-      version: '2.3.0',
+      supported: ['addisbiz.com', 'ethiopiabusinessdirectory.com', 'businessguide.ezega.com', '2merkato.com', 'dnb.com'],
+      version: '2.4.0',
       environment: process.env.NODE_ENV || 'production',
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -65,16 +65,16 @@ const server = http.createServer(async (req, res) => {
       targetUrl = targetUrl.replace(/^https?:\/\/ethiopiabusinessdirectory\.com/i, 'https://www.ethiopiabusinessdirectory.com');
     }
 
-    // For Ezega, route through high-reliability reader proxy with HTML format to bypass Cloudflare
+    // For Ezega and D&B, route through high-reliability reader proxy to bypass Cloudflare
     const isEzega = /ezega\.com/i.test(targetUrl);
+    const isDnb = /dnb\.com/i.test(targetUrl);
     let fetchUrl = targetUrl;
     let fetchHeaders = CHROME_HEADERS;
 
-    if (isEzega) {
+    if (isEzega || isDnb) {
       fetchUrl = `https://r.jina.ai/${targetUrl}`;
       fetchHeaders = {
-        'Accept': 'text/html,application/xhtml+xml',
-        'X-Return-Format': 'html',
+        'Accept': 'text/plain, text/html, application/xhtml+xml',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       };
     }
@@ -152,7 +152,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`\n=================================================`);
   console.log(`  Addisbiz running!`);
-  console.log(`  Supported: AddisBiz, EthiopiaBusinessDirectory, Ezega, 2merkato`);
+  console.log(`  Supported: AddisBiz, EthiopiaBusinessDirectory, Ezega, 2merkato, D&B`);
   console.log(`  Open in browser: http://localhost:${PORT}`);
   console.log(`  Local proxy:    http://localhost:${PORT}/api/proxy?url=...`);
   console.log(`=================================================\n`);
