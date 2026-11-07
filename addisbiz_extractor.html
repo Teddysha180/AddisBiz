@@ -916,6 +916,13 @@ function generateCategoryTitle(urlStr, type) {
 
     if (type === "dnb") {
       const path = parsed.pathname;
+      const mComp = path.match(/\/business-directory\/([^\/]+)(?:\/([^\/]+))?\/([^\/]+)\/companies/i);
+      if (mComp) {
+        const country = mComp[1].toUpperCase();
+        const ind = (mComp[3] || mComp[2]).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const loc = mComp[3] ? `${mComp[2].replace(/_/g, ' ').toUpperCase()}, ${country}` : country;
+        return `D&B - ${ind} (${loc})`;
+      }
       const mInfo = path.match(/company-information\.([^.]+)(?:\.([^.]+))?(?:\.([^.]+))?\.html/i);
       if (mInfo) {
         const ind = mInfo[1].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -1137,18 +1144,35 @@ function extractListings(doc, base, type){
       if (!it.name && text && text.length > 1 && !/profile|view|more/i.test(text)) it.name = text;
     });
 
-    const rawContent = doc.body?.textContent || "";
-    const mdRegex = /\[([^\]]+)\]\((https:\/\/www\.dnb\.com\/business-directory\/company-profiles\/[^\)\s]+)\)/gi;
+    const rawContent = (doc.body?.textContent || "") + " " + (doc.head?.textContent || "");
+    const mdRegex = /\[([^\]]*)\]\((https:\/\/www\.dnb\.com\/business-directory\/company-profiles\/[^\)\s]+)\)/gi;
     let m;
     while ((m = mdRegex.exec(rawContent)) !== null) {
       const name = m[1].replace(/\\/g, '').trim();
       const href = m[2].replace(/[?#].*$/, "");
-      if (!map.has(href)) {
-        const it = {url: href, name: name, type: "dnb"};
+      let it = map.get(href);
+      if (!it) {
+        it = {url: href, name: name, type: "dnb"};
+        map.set(href, it);
+        out.push(it);
+      } else if (!it.name && name) {
+        it.name = name;
+      }
+    }
+
+    const urlRegex = /(https:\/\/www\.dnb\.com\/business-directory\/company-profiles\/([a-z0-9_.-]+))/gi;
+    while ((m = urlRegex.exec(rawContent)) !== null) {
+      const href = m[1].replace(/[?#].*$/, "");
+      let it = map.get(href);
+      if (!it) {
+        const slug = m[2].replace(/\.[a-f0-9]{32}.*$/i, '').replace(/_/g, ' ').replace(/-/g, ' ');
+        const fallbackName = slug.replace(/\b\w/g, l => l.toUpperCase()).trim();
+        it = {url: href, name: fallbackName, type: "dnb"};
         map.set(href, it);
         out.push(it);
       }
     }
+
     return out;
   }
 
@@ -1215,8 +1239,19 @@ function findNextPageUrl(doc, currentUrl, type, rawHtml = "") {
       const curPage = parseInt(u.searchParams.get("page") || "1", 10);
       const rawText = (rawHtml || "") + " " + (doc.body?.textContent || "");
       
-      const pageLines = rawText.match(/(?:^|\n)\s*(\d+(?:\s+\d+)*)\s*(?:\n|$)/g) || [];
       let maxPage = curPage;
+
+      // 1. Detect total record count, e.g. "Showing 1-50 of 154"
+      const totalMatch = rawText.match(/Showing\s+\d+[-–\s]+\d+\s+of\s+([\d,]+)/i);
+      if (totalMatch) {
+        const total = parseInt(totalMatch[1].replace(/,/g, ''), 10);
+        if (!isNaN(total) && total > 0) {
+          maxPage = Math.max(maxPage, Math.ceil(total / 50));
+        }
+      }
+
+      // 2. Detect standalone pagination numbers like "2 3 4 5 6 7 8 9 10"
+      const pageLines = rawText.match(/(?:^|\n)\s*(\d+(?:\s+\d+)*)\s*(?:\n|$)/g) || [];
       for (const line of pageLines) {
         const nums = line.trim().split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n > 0 && n <= 500);
         if (nums.length >= 2 || (nums.length === 1 && nums[0] === curPage + 1)) {

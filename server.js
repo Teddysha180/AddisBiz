@@ -76,7 +76,8 @@ const server = http.createServer(async (req, res) => {
       fetchHeaders = {
         'Accept': 'text/plain, text/html, application/xhtml+xml',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'X-No-Cache': 'true'
+        'X-No-Cache': 'true',
+        'X-With-Links-Summary': 'true'
       };
     }
 
